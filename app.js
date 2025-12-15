@@ -28,7 +28,9 @@ const Card = ({ title, children, className = "" }) => html`
  * フローティングデータウィンドウ
  */
 const FloatingDataWindow = ({ data, columns, onClose }) => {
-    const [position, setPosition] = useState({ x: 20, y: 100 });
+    // 初期位置をレスポンシブに調整
+    const isMobile = window.innerWidth < 768;
+    const [position, setPosition] = useState(isMobile ? { x: 10, y: 60 } : { x: 20, y: 100 });
     const [isDragging, setIsDragging] = useState(false);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [isMinimized, setIsMinimized] = useState(false);
@@ -69,7 +71,7 @@ const FloatingDataWindow = ({ data, columns, onClose }) => {
 
     return html`
         <div 
-            class="fixed bg-white shadow-2xl rounded-lg border border-gray-200 z-50 flex flex-col overflow-hidden"
+            class="fixed bg-white shadow-2xl rounded-lg border border-gray-200 z-50 flex flex-col overflow-hidden max-w-[95vw]"
             style=${{ 
                 top: position.y, 
                 left: position.x, 
@@ -291,23 +293,6 @@ const App = () => {
     const handleDrillSubmit = () => {
         const quest = DRILL_QUESTS[currentQuestIndex];
         
-        // 正解判定ロジック
-        const isDatasetCorrect = datasetId === quest.datasetId;
-        
-        // 相関の強さを英語キーに変換して比較
-        let strengthKey = 'none';
-        const absR = Math.abs(stats.correlation);
-        if (absR >= 0.7) strengthKey = stats.correlation > 0 ? "strong_positive" : "strong_negative";
-        else if (absR >= 0.2) strengthKey = stats.correlation > 0 ? "positive" : "negative";
-
-        // クエストによっては「強い正の相関」だけ指定して、変数はどれでもOKな場合もあるが、
-        // ここでは簡単にdatasetの一致と相関傾向の一致で判定する。
-        // さらに厳密にするならクエストに正解の変数ペアを持たせる。
-        // 今回のクエスト要件：「身長と強い正の相関がある項目を探せ」 -> データセットは固定されている前提か、ユーザーが選ぶか。
-        
-        // クエストロジック修正: クエストで指定されたデータセット、指定されたターゲット変数に対して、正しい相関を持つ変数を選んでいるか。
-        // 簡易化のため、クエスト定義にある expectedCorrelation と現在の stats.strength が一致するかで判定する。
-        
         let isCorrect = false;
 
         // クエストの種類別判定
@@ -327,8 +312,6 @@ const App = () => {
         setDrillFeedback(null);
         if (currentQuestIndex < DRILL_QUESTS.length - 1) {
             setCurrentQuestIndex(prev => prev + 1);
-            // 次のクエストのデータセットに自動切り替えしない（ユーザーに探させる）か、ヒントとして切り替えるか。
-            // ここでは親切にデフォルト選択をリセットするだけにする
         } else {
             alert("全クエストクリア！おめでとう！");
             setMode('exploration');
@@ -338,7 +321,6 @@ const App = () => {
 
     // Auto-select first columns when dataset changes
     useEffect(() => {
-        // データセット変更時、カラムが存在しない場合に備えて初期化
         if (!dataset.columns.find(c => c.key === xKey)) setXKey(dataset.columns[0].key);
         if (!dataset.columns.find(c => c.key === yKey)) setYKey(dataset.columns[1].key);
     }, [datasetId]);
@@ -346,66 +328,67 @@ const App = () => {
     return html`
         <div class="h-full flex flex-col bg-gray-50">
             <!-- Header -->
-            <header class="bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm z-10">
-                <div class="flex items-center space-x-4">
-                    <div class="bg-indigo-600 text-white p-2 rounded-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <header class="bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row justify-between items-center shadow-sm z-10 gap-3">
+                <div class="flex items-center space-x-3 md:space-x-4 w-full md:w-auto">
+                    <div class="bg-indigo-600 text-white p-1.5 md:p-2 rounded-lg flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </div>
-                    <div>
-                        <h1 class="text-xl font-bold text-gray-900">Data Analysis Challenge</h1>
-                        <p class="text-xs text-gray-500">情報I 「データの活用・分析」学習ツール</p>
+                    <div class="min-w-0">
+                        <h1 class="text-lg md:text-xl font-bold text-gray-900 truncate">Data Analysis</h1>
+                        <p class="text-xs text-gray-500 truncate">データの活用・分析学習ツール</p>
                     </div>
                 </div>
                 
-                <div class="flex bg-gray-100 p-1 rounded-lg">
+                <div class="flex bg-gray-100 p-1 rounded-lg w-full md:w-auto">
                     <button 
-                        class="px-4 py-2 rounded-md text-sm font-medium transition-colors ${mode === 'exploration' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+                        class="flex-1 md:flex-none px-3 py-1.5 md:px-4 md:py-2 rounded-md text-xs md:text-sm font-medium transition-colors ${mode === 'exploration' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
                         onClick=${() => { setMode('exploration'); setDrillFeedback(null); }}
                     >
-                        自由研究モード
+                        自由研究
                     </button>
                     <button 
-                        class="px-4 py-2 rounded-md text-sm font-medium transition-colors ${mode === 'drill' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+                        class="flex-1 md:flex-none px-3 py-1.5 md:px-4 md:py-2 rounded-md text-xs md:text-sm font-medium transition-colors ${mode === 'drill' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
                         onClick=${() => { setMode('drill'); setDrillFeedback(null); }}
                     >
-                        ドリルモード
+                        ドリル
                     </button>
                 </div>
             </header>
 
             <!-- Drill Mode Controller -->
             ${mode === 'drill' && html`
-                <div class="bg-orange-50 border-b border-orange-200 px-6 py-4">
-                    <div class="max-w-6xl mx-auto flex justify-between items-center">
+                <div class="bg-orange-50 border-b border-orange-200 px-4 py-3 md:px-6 md:py-4 flex-shrink-0">
+                    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
                         <div>
                             <span class="inline-block px-2 py-1 bg-orange-200 text-orange-800 text-xs font-bold rounded mb-1">Quest ${currentQuestIndex + 1}/${DRILL_QUESTS.length}</span>
-                            <h2 class="text-lg font-bold text-gray-800">${DRILL_QUESTS[currentQuestIndex].text}</h2>
-                            <p class="text-sm text-gray-600 mt-1">💡 ヒント: ${DRILL_QUESTS[currentQuestIndex].hint}</p>
+                            <h2 class="text-base md:text-lg font-bold text-gray-800 leading-tight">${DRILL_QUESTS[currentQuestIndex].text}</h2>
+                            <p class="text-xs md:text-sm text-gray-600 mt-1">💡 ヒント: ${DRILL_QUESTS[currentQuestIndex].hint}</p>
                         </div>
-                        <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-4 w-full md:w-auto justify-end">
                             ${drillFeedback === 'correct' ? html`
-                                <div class="flex items-center text-green-600 font-bold animate-bounce">
-                                    <span class="text-2xl mr-2">◎</span> 正解！
+                                <div class="flex items-center text-green-600 font-bold animate-bounce text-sm md:text-base">
+                                    <span class="text-lg md:text-2xl mr-1 md:mr-2">◎</span> 正解！
                                 </div>
-                                <button onClick=${nextQuest} class="px-4 py-2 bg-orange-600 text-white rounded shadow hover:bg-orange-700">次の問題へ</button>
+                                <button onClick=${nextQuest} class="px-3 py-1.5 md:px-4 md:py-2 bg-orange-600 text-white text-sm rounded shadow hover:bg-orange-700">次へ</button>
                             ` : drillFeedback === 'incorrect' ? html`
-                                <div class="text-red-600 font-bold mr-4">
-                                    <span class="text-xl mr-1">×</span> 条件に合いません
+                                <div class="text-red-600 font-bold mr-2 text-sm md:text-base">
+                                    <span class="text-lg md:text-xl mr-1">×</span> 違うよ
                                 </div>
-                                <button onClick=${handleDrillSubmit} class="px-4 py-2 bg-white border border-orange-300 text-orange-700 rounded shadow hover:bg-orange-50">回答する</button>
+                                <button onClick=${handleDrillSubmit} class="px-3 py-1.5 md:px-4 md:py-2 bg-white border border-orange-300 text-orange-700 text-sm rounded shadow hover:bg-orange-50">回答</button>
                             ` : html`
-                                <button onClick=${handleDrillSubmit} class="px-4 py-2 bg-orange-600 text-white rounded shadow hover:bg-orange-700">回答する</button>
+                                <button onClick=${handleDrillSubmit} class="px-3 py-1.5 md:px-4 md:py-2 bg-orange-600 text-white text-sm rounded shadow hover:bg-orange-700">回答する</button>
                             `}
                         </div>
                     </div>
                 </div>
             `}
 
-            <!-- Main Area -->
-            <main class="flex-1 flex overflow-hidden p-6 gap-6 max-w-[1600px] w-full mx-auto">
+            <!-- Main Area: Responsive Layout (Stack on mobile, Row on Desktop) -->
+            <main class="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden p-4 md:p-6 gap-4 md:gap-6 max-w-[1600px] w-full mx-auto">
                 
-                <!-- Left Column: Controls -->
-                <aside class="w-80 flex-shrink-0 flex flex-col gap-4">
+                <!-- Left Column: Controls (Order 2 on mobile to show chart first, but usually users need controls first to interact) -->
+                <!-- Let's keep natural DOM order: Controls -> Chart -> Analysis. On mobile user scrolls down. -->
+                <aside class="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4">
                     <${Card} title="データ設定" className="flex-none">
                         <div class="space-y-4">
                             <div>
@@ -462,16 +445,17 @@ const App = () => {
 
                 <!-- Center Column: Visualization -->
                 <section class="flex-1 flex flex-col min-w-0">
-                    <${Card} className="h-full">
+                    <${Card} className="h-full min-h-[400px] lg:min-h-0">
                         <div class="h-full flex flex-col">
                             <div class="flex justify-between items-center mb-4 px-2">
                                 <h2 class="font-bold text-gray-800 text-lg">散布図と回帰直線</h2>
-                                <div class="flex items-center gap-4 text-sm">
-                                    <div class="flex items-center"><span class="w-3 h-3 bg-indigo-500 rounded-full mr-2"></span>実測値</div>
-                                    <div class="flex items-center"><span class="w-8 h-1 bg-orange-500 mr-2"></span>回帰直線</div>
+                                <div class="flex items-center gap-4 text-xs md:text-sm">
+                                    <div class="flex items-center"><span class="w-2 h-2 md:w-3 md:h-3 bg-indigo-500 rounded-full mr-1 md:mr-2"></span>実測値</div>
+                                    <div class="flex items-center"><span class="w-4 h-1 md:w-8 bg-orange-500 mr-1 md:mr-2"></span>回帰直線</div>
                                 </div>
                             </div>
-                            <div class="flex-1 w-full min-h-0">
+                            <div class="flex-1 w-full min-h-0 relative">
+                                <!-- Mobile needs absolute positioning or flex basis hack sometimes for recharts responsive -->
                                 <${ScatterVis} 
                                     data=${dataset.data} 
                                     xConfig=${xColumn} 
@@ -484,7 +468,7 @@ const App = () => {
                 </section>
 
                 <!-- Right Column: Analysis -->
-                <aside class="w-72 flex-shrink-0">
+                <aside class="w-full lg:w-72 flex-shrink-0">
                     <${Card} title="分析結果" className="h-full">
                         <${AnalysisPanel} 
                             xLabel=${xColumn.label}
