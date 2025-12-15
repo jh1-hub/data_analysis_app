@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import htm from 'htm';
 import { 
     ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, 
-    ResponsiveContainer, Line, ComposedChart, Label 
+    ResponsiveContainer, Line, ComposedChart, Label, Cell 
 } from 'recharts';
 import { DATASETS, DRILL_QUESTS } from './utils/data.js';
 import * as MathUtils from './utils/math.js';
@@ -27,7 +27,7 @@ const Card = ({ title, children, className = "" }) => html`
 /**
  * フローティングデータウィンドウ
  */
-const FloatingDataWindow = ({ data, columns, onClose }) => {
+const FloatingDataWindow = ({ data, columns, excludedIds, onTogglePoint, onClose }) => {
     // 初期位置をレスポンシブに調整
     const isMobile = window.innerWidth < 768;
     const [position, setPosition] = useState(isMobile ? { x: 10, y: 60 } : { x: 20, y: 100 });
@@ -75,7 +75,7 @@ const FloatingDataWindow = ({ data, columns, onClose }) => {
             style=${{ 
                 top: position.y, 
                 left: position.x, 
-                width: isMinimized ? '200px' : '500px',
+                width: isMinimized ? '200px' : '550px',
                 height: isMinimized ? 'auto' : '400px',
                 transition: isDragging ? 'none' : 'width 0.2s, height 0.2s'
             }}
@@ -84,7 +84,7 @@ const FloatingDataWindow = ({ data, columns, onClose }) => {
                 class="bg-gray-800 text-white px-3 py-2 cursor-grab active:cursor-grabbing flex justify-between items-center select-none"
                 onMouseDown=${handleMouseDown}
             >
-                <span class="text-sm font-bold">生データ一覧 (n=${data.length})</span>
+                <span class="text-sm font-bold">データ選択・一覧 (n=${data.length})</span>
                 <div class="flex gap-2">
                     <button onClick=${() => setIsMinimized(!isMinimized)} class="hover:text-gray-300">
                         ${isMinimized ? '□' : '－'}
@@ -97,19 +97,30 @@ const FloatingDataWindow = ({ data, columns, onClose }) => {
                     <table class="w-full text-sm text-left text-gray-600">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
                             <tr>
-                                <th class="px-4 py-2 border-b">ID</th>
-                                ${columns.map(col => html`<th key=${col.key} class="px-4 py-2 border-b whitespace-nowrap">${col.label}</th>`)}
+                                <th class="px-4 py-2 border-b bg-gray-50 w-10 text-center">使用</th>
+                                <th class="px-4 py-2 border-b bg-gray-50">ID</th>
+                                ${columns.map(col => html`<th key=${col.key} class="px-4 py-2 border-b bg-gray-50 whitespace-nowrap">${col.label}</th>`)}
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.map(row => html`
-                                <tr key=${row.id} class="bg-white border-b hover:bg-gray-50">
-                                    <td class="px-4 py-2 font-medium text-gray-900">${row.id}</td>
+                            ${data.map(row => {
+                                const isExcluded = excludedIds.includes(row.id);
+                                return html`
+                                <tr key=${row.id} class="border-b hover:bg-gray-50 ${isExcluded ? 'bg-gray-100 text-gray-400' : 'bg-white'}">
+                                    <td class="px-4 py-2 text-center">
+                                        <input 
+                                            type="checkbox" 
+                                            checked=${!isExcluded} 
+                                            onChange=${() => onTogglePoint(row.id)}
+                                            class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                    </td>
+                                    <td class="px-4 py-2 font-medium">${row.id}</td>
                                     ${columns.map(col => html`
                                         <td key=${col.key} class="px-4 py-2">${row[col.key]}</td>
                                     `)}
                                 </tr>
-                            `)}
+                            `})}
                         </tbody>
                     </table>
                 </div>
@@ -121,19 +132,37 @@ const FloatingDataWindow = ({ data, columns, onClose }) => {
 /**
  * 散布図コンポーネント
  */
-const ScatterVis = ({ data, xConfig, yConfig, regression }) => {
-    // 回帰直線のデータポイント生成
-    const lineData = useMemo(() => {
-        if (!data || data.length === 0) return [];
+const ScatterVis = ({ data, xConfig, yConfig, regression, excludedIds, onTogglePoint }) => {
+    // グラフのドメイン（表示範囲）を全データに基づいて固定する（点を除外しても軸がブレないように）
+    const domain = useMemo(() => {
+        if (!data || data.length === 0) return { x: ['auto', 'auto'], y: ['auto', 'auto'] };
         const xValues = data.map(d => d[xConfig.key]);
+        const yValues = data.map(d => d[yConfig.key]);
         const minX = Math.min(...xValues);
         const maxX = Math.max(...xValues);
+        const minY = Math.min(...yValues);
+        const maxY = Math.max(...yValues);
+        
+        // 少し余白を持たせる
+        const padX = (maxX - minX) * 0.1;
+        const padY = (maxY - minY) * 0.1;
+
+        return {
+            x: [Math.floor(minX - padX), Math.ceil(maxX + padX)],
+            y: [Math.floor(minY - padY), Math.ceil(maxY + padY)]
+        };
+    }, [data, xConfig, yConfig]);
+
+    // 回帰直線のデータポイント生成（除外データの影響を受けたregressionパラメータを使用）
+    const lineData = useMemo(() => {
+        const [minX, maxX] = domain.x;
+        if (typeof minX !== 'number' || typeof maxX !== 'number') return [];
         
         return [
             { [xConfig.key]: minX, [yConfig.key]: MathUtils.predictY(minX, regression.slope, regression.intercept) },
             { [xConfig.key]: maxX, [yConfig.key]: MathUtils.predictY(maxX, regression.slope, regression.intercept) }
         ];
-    }, [data, xConfig, yConfig, regression]);
+    }, [domain, xConfig, yConfig, regression]);
 
     return html`
         <${ResponsiveContainer} width="100%" height="100%">
@@ -145,14 +174,14 @@ const ScatterVis = ({ data, xConfig, yConfig, regression }) => {
                     type="number" 
                     dataKey=${xConfig.key} 
                     name=${xConfig.label} 
-                    domain=${['auto', 'auto']}
+                    domain=${domain.x}
                     label=${{ value: xConfig.label, position: 'bottom', offset: 0, fill: '#3b82f6' }}
                 />
                 <${YAxis} 
                     type="number" 
                     dataKey=${yConfig.key} 
                     name=${yConfig.label} 
-                    domain=${['auto', 'auto']}
+                    domain=${domain.y}
                     label=${{ value: yConfig.label, angle: -90, position: 'insideLeft', fill: '#10b981' }}
                 />
                 <${Tooltip} 
@@ -160,21 +189,43 @@ const ScatterVis = ({ data, xConfig, yConfig, regression }) => {
                     content=${({ active, payload }) => {
                         if (active && payload && payload.length) {
                             const d = payload[0].payload;
+                            // tooltip payload comes from Scatter or Line. Check data type.
+                            if (!d.id) return null; // Ignore line tooltip
+                            
+                            const isExcluded = excludedIds.includes(d.id);
                             return html`
                                 <div class="bg-white border border-gray-200 p-2 rounded shadow text-sm">
-                                    <p class="font-bold mb-1">ID: ${d.id}</p>
+                                    <div class="font-bold mb-1 flex justify-between">
+                                        <span>ID: ${d.id}</span>
+                                        <span class="text-xs ${isExcluded ? 'text-red-500' : 'text-green-600'} ml-2">
+                                            ${isExcluded ? '除外中' : '使用中'}
+                                        </span>
+                                    </div>
                                     <p class="text-blue-600">${xConfig.label}: ${d[xConfig.key]}</p>
                                     <p class="text-green-600">${yConfig.label}: ${d[yConfig.key]}</p>
+                                    <p class="text-xs text-gray-400 mt-1">クリックで切替</p>
                                 </div>
                             `;
                         }
                         return null;
                     }}
                 />
-                <${Scatter} name="Data" data=${data} fill="#8884d8">
-                    ${data.map((entry, index) => html`
-                        <cell key=${`cell-${index}`} fill="#6366f1" />
-                    `)}
+                <${Scatter} 
+                    name="Data" 
+                    data=${data} 
+                    onClick=${(d) => onTogglePoint(d.id)}
+                    cursor="pointer"
+                >
+                    ${data.map((entry, index) => {
+                        const isExcluded = excludedIds.includes(entry.id);
+                        return html`
+                            <${Cell} 
+                                key=${`cell-${index}`} 
+                                fill=${isExcluded ? '#e5e7eb' : '#6366f1'} 
+                                stroke=${isExcluded ? '#9ca3af' : 'none'}
+                            />
+                        `;
+                    })}
                 </${Scatter}>
                 <${Line}
                     data=${lineData}
@@ -184,6 +235,7 @@ const ScatterVis = ({ data, xConfig, yConfig, regression }) => {
                     dot=${false}
                     activeDot=${false}
                     legendType="none"
+                    isAnimationActive=${false}
                 />
             </${ComposedChart}>
         </${ResponsiveContainer}>
@@ -193,7 +245,7 @@ const ScatterVis = ({ data, xConfig, yConfig, regression }) => {
 /**
  * 分析パネル
  */
-const AnalysisPanel = ({ xLabel, yLabel, correlation, regression, strength }) => {
+const AnalysisPanel = ({ xLabel, yLabel, correlation, regression, strength, activeCount, totalCount }) => {
     const [predictInput, setPredictInput] = useState("");
     
     const predictedValue = useMemo(() => {
@@ -211,7 +263,8 @@ const AnalysisPanel = ({ xLabel, yLabel, correlation, regression, strength }) =>
                         <span class="text-gray-600 font-medium">相関係数 (r)</span>
                         <span class="text-2xl font-bold text-blue-700">${correlation.toFixed(3)}</span>
                     </div>
-                    <div class="text-right">
+                    <div class="text-right flex justify-between items-center">
+                        <span class="text-xs text-gray-500">n = ${activeCount} / ${totalCount}</span>
                         <span class="inline-block px-2 py-1 text-xs font-semibold rounded-full 
                             ${strength.includes('強') ? 'bg-red-100 text-red-800' : 
                               strength.includes('なし') ? 'bg-gray-200 text-gray-800' : 'bg-green-100 text-green-800'}">
@@ -267,35 +320,54 @@ const App = () => {
     const [xKey, setXKey] = useState(DATASETS[0].columns[0].key);
     const [yKey, setYKey] = useState(DATASETS[0].columns[1].key);
     
+    // State: Selection (Excluded Data Points)
+    const [excludedIds, setExcludedIds] = useState([]);
+
     // State: UI
     const [showDataWindow, setShowDataWindow] = useState(false);
     
     // State: Drill
     const [currentQuestIndex, setCurrentQuestIndex] = useState(0);
-    const [drillFeedback, setDrillFeedback] = useState(null); // 'correct' | 'incorrect' | null
+    const [drillFeedback, setDrillFeedback] = useState(null);
 
     // Derived Data
     const dataset = useMemo(() => DATASETS.find(d => d.id === datasetId), [datasetId]);
     const xColumn = useMemo(() => dataset.columns.find(c => c.key === xKey), [dataset, xKey]);
     const yColumn = useMemo(() => dataset.columns.find(c => c.key === yKey), [dataset, yKey]);
     
-    // Statistics Calculation
+    // Statistics Calculation (Active data only)
     const stats = useMemo(() => {
-        const xData = dataset.data.map(d => d[xKey]);
-        const yData = dataset.data.map(d => d[yKey]);
+        const activeData = dataset.data.filter(d => !excludedIds.includes(d.id));
+        const xData = activeData.map(d => d[xKey]);
+        const yData = activeData.map(d => d[yKey]);
+        
+        // Handle empty selection
+        if (xData.length === 0) {
+            return { correlation: 0, regression: { slope: 0, intercept: 0 }, strength: "データなし", activeCount: 0 };
+        }
+
         const r = MathUtils.calculateCorrelation(xData, yData);
         const reg = MathUtils.calculateRegression(xData, yData);
         const str = MathUtils.getCorrelationStrength(r);
-        return { correlation: r, regression: reg, strength: str };
-    }, [dataset, xKey, yKey]);
+        return { correlation: r, regression: reg, strength: str, activeCount: xData.length };
+    }, [dataset, xKey, yKey, excludedIds]);
 
     // Handlers
+    const togglePoint = (id) => {
+        setExcludedIds(prev => 
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    const handleSwapAxes = () => {
+        setXKey(yKey);
+        setYKey(xKey);
+    };
+
     const handleDrillSubmit = () => {
         const quest = DRILL_QUESTS[currentQuestIndex];
-        
         let isCorrect = false;
 
-        // クエストの種類別判定
         if (quest.datasetId === datasetId) {
              if (quest.expectedCorrelation === "strong_positive" && stats.strength === "強い正の相関") isCorrect = true;
              if (quest.expectedCorrelation === "negative" && stats.strength.includes("負")) isCorrect = true;
@@ -319,10 +391,11 @@ const App = () => {
         }
     };
 
-    // Auto-select first columns when dataset changes
+    // Auto-select first columns & reset selection when dataset changes
     useEffect(() => {
         if (!dataset.columns.find(c => c.key === xKey)) setXKey(dataset.columns[0].key);
         if (!dataset.columns.find(c => c.key === yKey)) setYKey(dataset.columns[1].key);
+        setExcludedIds([]); // Reset filters
     }, [datasetId]);
 
     return html`
@@ -383,11 +456,10 @@ const App = () => {
                 </div>
             `}
 
-            <!-- Main Area: Responsive Layout (Stack on mobile, Row on Desktop) -->
+            <!-- Main Area -->
             <main class="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden p-4 md:p-6 gap-4 md:gap-6 max-w-[1600px] w-full mx-auto">
                 
-                <!-- Left Column: Controls (Order 2 on mobile to show chart first, but usually users need controls first to interact) -->
-                <!-- Let's keep natural DOM order: Controls -> Chart -> Analysis. On mobile user scrolls down. -->
+                <!-- Left Column: Controls -->
                 <aside class="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4">
                     <${Card} title="データ設定" className="flex-none">
                         <div class="space-y-4">
@@ -407,13 +479,14 @@ const App = () => {
                                 onClick=${() => setShowDataWindow(!showDataWindow)}
                                 class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                             >
-                                ${showDataWindow ? 'データを隠す' : '生データを見る'}
+                                ${showDataWindow ? 'データ選択・一覧' : 'データ選択・一覧'}
                             </button>
+                            <p class="text-xs text-gray-400 text-center">※ グラフ上の点をクリックしても除外できます</p>
                         </div>
                     </${Card}>
 
                     <${Card} title="変数選択" className="flex-1">
-                        <div class="space-y-6">
+                        <div class="space-y-4">
                             <div class="p-3 bg-blue-50 rounded-md border border-blue-100">
                                 <label class="block text-sm font-bold text-blue-800 mb-1">X軸 (説明変数)</label>
                                 <select 
@@ -425,8 +498,14 @@ const App = () => {
                                 </select>
                             </div>
 
-                            <div class="flex justify-center text-gray-400">
-                                ▼ vs ▼
+                            <div class="flex justify-center items-center">
+                                <button 
+                                    onClick=${handleSwapAxes}
+                                    class="p-2 rounded-full hover:bg-gray-100 border border-gray-200 text-gray-500 transition-transform active:scale-95"
+                                    title="軸を入れ替える"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5-6 5 6"/><path d="M17 14l-5 6-5-6"/></svg>
+                                </button>
                             </div>
 
                             <div class="p-3 bg-green-50 rounded-md border border-green-100">
@@ -451,16 +530,18 @@ const App = () => {
                                 <h2 class="font-bold text-gray-800 text-lg">散布図と回帰直線</h2>
                                 <div class="flex items-center gap-4 text-xs md:text-sm">
                                     <div class="flex items-center"><span class="w-2 h-2 md:w-3 md:h-3 bg-indigo-500 rounded-full mr-1 md:mr-2"></span>実測値</div>
+                                    <div class="flex items-center"><span class="w-2 h-2 md:w-3 md:h-3 bg-gray-300 rounded-full mr-1 md:mr-2"></span>除外値</div>
                                     <div class="flex items-center"><span class="w-4 h-1 md:w-8 bg-orange-500 mr-1 md:mr-2"></span>回帰直線</div>
                                 </div>
                             </div>
                             <div class="flex-1 w-full min-h-0 relative">
-                                <!-- Mobile needs absolute positioning or flex basis hack sometimes for recharts responsive -->
                                 <${ScatterVis} 
                                     data=${dataset.data} 
                                     xConfig=${xColumn} 
                                     yConfig=${yColumn} 
                                     regression=${stats.regression}
+                                    excludedIds=${excludedIds}
+                                    onTogglePoint=${togglePoint}
                                 />
                             </div>
                         </div>
@@ -476,6 +557,8 @@ const App = () => {
                             correlation=${stats.correlation}
                             regression=${stats.regression}
                             strength=${stats.strength}
+                            activeCount=${stats.activeCount}
+                            totalCount=${dataset.data.length}
                         />
                     </${Card}>
                 </aside>
@@ -487,6 +570,8 @@ const App = () => {
                 <${FloatingDataWindow} 
                     data=${dataset.data} 
                     columns=${dataset.columns} 
+                    excludedIds=${excludedIds}
+                    onTogglePoint=${togglePoint}
                     onClose=${() => setShowDataWindow(false)} 
                 />
             `}
