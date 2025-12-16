@@ -17,25 +17,28 @@ export const DATASETS = [
             { key: "gaming_time", label: "ゲーム時間 (分/日)", type: "number", min: 0, max: 300 }
         ],
         data: [
-            { id: 1, study_time: 120, score: 85, smartphone_time: 60, height: 170, sleep_time: 7.5, commute_time: 30, gaming_time: 20 },
-            { id: 2, study_time: 30, score: 45, smartphone_time: 180, height: 165, sleep_time: 6.0, commute_time: 15, gaming_time: 180 },
+            // study_time: Strong Positive to score
+            // sleep_time: Randomized to have weak/no correlation with study_time (Some study hard & sleep less, some study little & sleep lot)
+            // smartphone_time: Negative/Strong Negative to score
+            { id: 1, study_time: 120, score: 85, smartphone_time: 60, height: 170, sleep_time: 6.0, commute_time: 30, gaming_time: 20 }, // Studying late
+            { id: 2, study_time: 30, score: 45, smartphone_time: 180, height: 165, sleep_time: 9.0, commute_time: 15, gaming_time: 180 }, // Lazy, sleeps a lot
             { id: 3, study_time: 90, score: 78, smartphone_time: 90, height: 172, sleep_time: 7.0, commute_time: 45, gaming_time: 60 },
-            { id: 4, study_time: 150, score: 92, smartphone_time: 45, height: 168, sleep_time: 8.0, commute_time: 20, gaming_time: 10 },
-            { id: 5, study_time: 60, score: 60, smartphone_time: 120, height: 175, sleep_time: 6.5, commute_time: 60, gaming_time: 90 },
-            { id: 6, study_time: 10, score: 30, smartphone_time: 240, height: 160, sleep_time: 5.5, commute_time: 25, gaming_time: 200 },
-            { id: 7, study_time: 180, score: 98, smartphone_time: 30, height: 171, sleep_time: 8.5, commute_time: 50, gaming_time: 0 },
-            { id: 8, study_time: 75, score: 70, smartphone_time: 100, height: 178, sleep_time: 7.0, commute_time: 10, gaming_time: 60 },
-            { id: 9, study_time: 45, score: 55, smartphone_time: 150, height: 166, sleep_time: 6.0, commute_time: 40, gaming_time: 120 },
-            { id: 10, study_time: 110, score: 82, smartphone_time: 70, height: 169, sleep_time: 7.5, commute_time: 35, gaming_time: 30 },
-            { id: 11, study_time: 130, score: 88, smartphone_time: 50, height: 173, sleep_time: 8.0, commute_time: 15, gaming_time: 20 },
-            { id: 12, study_time: 20, score: 40, smartphone_time: 200, height: 158, sleep_time: 5.0, commute_time: 55, gaming_time: 150 },
-            { id: 13, study_time: 100, score: 75, smartphone_time: 80, height: 174, sleep_time: 7.0, commute_time: 20, gaming_time: 50 },
-            { id: 14, study_time: 50, score: 58, smartphone_time: 130, height: 167, sleep_time: 6.5, commute_time: 30, gaming_time: 100 },
-            { id: 15, study_time: 160, score: 95, smartphone_time: 40, height: 176, sleep_time: 8.0, commute_time: 45, gaming_time: 10 },
-            { id: 16, study_time: 80, score: 72, smartphone_time: 110, height: 162, sleep_time: 7.0, commute_time: 25, gaming_time: 70 },
-            { id: 17, study_time: 40, score: 50, smartphone_time: 160, height: 170, sleep_time: 6.0, commute_time: 60, gaming_time: 130 },
-            { id: 18, study_time: 140, score: 90, smartphone_time: 55, height: 180, sleep_time: 8.0, commute_time: 10, gaming_time: 15 },
-            { id: 19, study_time: 5, score: 25, smartphone_time: 300, height: 164, sleep_time: 4.5, commute_time: 5, gaming_time: 240 },
+            { id: 4, study_time: 150, score: 92, smartphone_time: 45, height: 168, sleep_time: 6.5, commute_time: 20, gaming_time: 10 },
+            { id: 5, study_time: 60, score: 60, smartphone_time: 120, height: 175, sleep_time: 8.0, commute_time: 60, gaming_time: 90 },
+            { id: 6, study_time: 10, score: 30, smartphone_time: 240, height: 160, sleep_time: 5.0, commute_time: 25, gaming_time: 200 }, // Gaming all night
+            { id: 7, study_time: 180, score: 98, smartphone_time: 30, height: 171, sleep_time: 7.0, commute_time: 50, gaming_time: 0 },
+            { id: 8, study_time: 75, score: 70, smartphone_time: 100, height: 178, sleep_time: 7.5, commute_time: 10, gaming_time: 60 },
+            { id: 9, study_time: 45, score: 55, smartphone_time: 150, height: 166, sleep_time: 8.5, commute_time: 40, gaming_time: 120 },
+            { id: 10, study_time: 110, score: 82, smartphone_time: 70, height: 169, sleep_time: 6.5, commute_time: 35, gaming_time: 30 },
+            { id: 11, study_time: 130, score: 88, smartphone_time: 50, height: 173, sleep_time: 7.0, commute_time: 15, gaming_time: 20 },
+            { id: 12, study_time: 20, score: 40, smartphone_time: 200, height: 158, sleep_time: 5.5, commute_time: 55, gaming_time: 150 },
+            { id: 13, study_time: 100, score: 75, smartphone_time: 80, height: 174, sleep_time: 7.5, commute_time: 20, gaming_time: 50 },
+            { id: 14, study_time: 50, score: 58, smartphone_time: 130, height: 167, sleep_time: 9.0, commute_time: 30, gaming_time: 100 },
+            { id: 15, study_time: 160, score: 95, smartphone_time: 40, height: 176, sleep_time: 6.0, commute_time: 45, gaming_time: 10 }, // Crammer
+            { id: 16, study_time: 80, score: 72, smartphone_time: 110, height: 162, sleep_time: 7.5, commute_time: 25, gaming_time: 70 },
+            { id: 17, study_time: 40, score: 50, smartphone_time: 160, height: 170, sleep_time: 8.0, commute_time: 60, gaming_time: 130 },
+            { id: 18, study_time: 140, score: 90, smartphone_time: 55, height: 180, sleep_time: 7.0, commute_time: 10, gaming_time: 15 },
+            { id: 19, study_time: 5, score: 25, smartphone_time: 300, height: 164, sleep_time: 4.0, commute_time: 5, gaming_time: 240 }, // Extreme gamer
             { id: 20, study_time: 95, score: 76, smartphone_time: 95, height: 172, sleep_time: 7.0, commute_time: 30, gaming_time: 60 }
         ]
     },
@@ -47,13 +50,12 @@ export const DATASETS = [
             { key: "temperature", label: "最高気温 (℃)", type: "number", min: 20, max: 40 },
             { key: "customers", label: "来客数 (人)", type: "number", min: 200, max: 1000 },
             { key: "icecream_sales", label: "アイス売上 (個)", type: "number", min: 0, max: 200 },
-            { key: "cold_drink_sales", label: "清涼飲料水売上 (本)", type: "number", min: 0, max: 500 }, // Added
+            { key: "cold_drink_sales", label: "清涼飲料水売上 (本)", type: "number", min: 0, max: 500 },
             { key: "hot_coffee_sales", label: "ホットコーヒー売上 (杯)", type: "number", min: 0, max: 100 },
             { key: "umbrella_sales", label: "傘売上 (本)", type: "number", min: 0, max: 50 },
             { key: "rain", label: "降水量 (mm)", type: "number", min: 0, max: 100 }
         ],
         data: [
-            // Cold drinks strongly correlate with Temperature (and thus with Ice Cream)
             { id: 1, temperature: 35.0, customers: 850, icecream_sales: 180, cold_drink_sales: 450, hot_coffee_sales: 10, umbrella_sales: 0, rain: 0 },
             { id: 2, temperature: 28.0, customers: 600, icecream_sales: 50, cold_drink_sales: 200, hot_coffee_sales: 40, umbrella_sales: 20, rain: 15 },
             { id: 3, temperature: 33.5, customers: 800, icecream_sales: 150, cold_drink_sales: 400, hot_coffee_sales: 15, umbrella_sales: 0, rain: 0 },
@@ -89,15 +91,11 @@ export const DATASETS = [
             { key: "luck", label: "運", type: "number", min: 0, max: 100 }
         ],
         data: [
-            // Level drives HP and Attack.
-            // Weight negative correlates with Speed.
-            // Luck is random.
             { id: 1, level: 10, hp: 500, attack: 30, speed: 80, equip_weight: 10, luck: 50 },
             { id: 2, level: 45, hp: 4500, attack: 180, speed: 20, equip_weight: 90, luck: 10 },
             { id: 3, level: 25, hp: 2500, attack: 100, speed: 50, equip_weight: 50, luck: 80 },
             { id: 4, level: 5, hp: 300, attack: 15, speed: 70, equip_weight: 15, luck: 20 },
-            { id: 5, level: 50, hp: 4800, attack: 195, speed: 90, equip_weight: 5, luck: 90 }, // High level glass cannon (Low weight high speed) - outlier to general trend? No, let's keep trend simple.
-            // Let's make Weight vs Speed consistently Negative.
+            { id: 5, level: 50, hp: 4800, attack: 195, speed: 90, equip_weight: 5, luck: 90 },
             { id: 6, level: 30, hp: 3000, attack: 120, speed: 40, equip_weight: 60, luck: 40 },
             { id: 7, level: 15, hp: 1500, attack: 60, speed: 60, equip_weight: 30, luck: 60 },
             { id: 8, level: 40, hp: 4000, attack: 160, speed: 30, equip_weight: 70, luck: 30 },
@@ -124,6 +122,8 @@ export const DRILL_QUESTS = [
         datasetId: "students",
         initialX: "study_time",
         initialY: "height",
+        targetKey: "study_time",
+        validAnswers: ["score"], // Only score is accepted
         expectedStrength: "かなり強い正の相関がある",
         hint: "勉強を頑張れば頑張るほど、明確に上がる数値は？",
         causationNote: "【因果関係あり】勉強時間が増えたことが原因で、成績が上がったと考えられます。"
@@ -134,6 +134,8 @@ export const DRILL_QUESTS = [
         datasetId: "students",
         initialX: "smartphone_time",
         initialY: "height",
+        targetKey: "smartphone_time",
+        validAnswers: ["score"], // Focusing on the "result" aspect
         expectedStrength: "かなり強い負の相関がある",
         hint: "スマホ時間が増えると、逆に減ってしまう大事な結果は？",
         causationNote: "【因果関係の可能性】スマホに時間を使いすぎて勉強時間が減ったことが、成績低下の原因かもしれません。"
@@ -144,7 +146,9 @@ export const DRILL_QUESTS = [
         datasetId: "rpg_game",
         initialX: "equip_weight",
         initialY: "hp",
-        expectedStrength: "負の相関がある", // Depending on data generation it might be strong or just negative
+        targetKey: "equip_weight",
+        validAnswers: ["speed"],
+        expectedStrength: "負の相関がある", 
         hint: "重たい鎧を着ると、キャラクターの動きはどうなるかな？",
         causationNote: "【因果関係あり】装備が重いことが原因で、動くスピードが遅くなっています。"
     },
@@ -154,6 +158,8 @@ export const DRILL_QUESTS = [
         datasetId: "convenience",
         initialX: "temperature",
         initialY: "customers",
+        targetKey: "temperature",
+        validAnswers: ["cold_drink_sales"], // Exclude icecream (food) and coffee
         expectedStrength: "かなり強い正の相関がある",
         hint: "暑い日に飲みたくなるのは、ホットコーヒー？それとも清涼飲料水？",
         causationNote: "【因果関係あり】気温が高いことが原因で、冷たい飲み物が売れています。"
@@ -163,7 +169,9 @@ export const DRILL_QUESTS = [
         text: "★難問★ 「アイス売上」と「かなり強い正の相関」がある別の商品は？",
         datasetId: "convenience",
         initialX: "icecream_sales",
-        initialY: "customers", 
+        initialY: "customers",
+        targetKey: "icecream_sales",
+        validAnswers: ["cold_drink_sales"], // Only this shows the spurious correlation intended
         expectedStrength: "かなり強い正の相関がある",
         hint: "アイスが売れる暑い日は、他の冷たいものも売れているはず！",
         causationNote: "【重要：因果関係なし！】アイスが売れたからジュースが売れたわけではありません。「気温が高い」という共通の原因があるため、両方売れたのです。これを「擬似相関」と呼びます。"
@@ -174,6 +182,8 @@ export const DRILL_QUESTS = [
         datasetId: "rpg_game",
         initialX: "level",
         initialY: "luck",
+        targetKey: "level",
+        validAnswers: ["hp", "attack"], // Both are valid
         expectedStrength: "かなり強い正の相関がある",
         hint: "レベルが上がると、キャラクターの体力はどうなる？",
         causationNote: "【因果関係あり】レベルアップという仕組みによって、HPが上昇するようにプログラムされています。"
@@ -184,6 +194,8 @@ export const DRILL_QUESTS = [
         datasetId: "convenience",
         initialX: "rain",
         initialY: "icecream_sales",
+        targetKey: "rain",
+        validAnswers: ["umbrella_sales"],
         expectedStrength: "正の相関がある",
         hint: "雨が降れば降るほど、必要になって売れるものは？",
         causationNote: "【因果関係あり】雨が降ったことが原因で、傘を必要とする人が増えました。"

@@ -584,19 +584,25 @@ const App = () => {
             return;
         }
 
-        // Check correlation strength matches
-        // Also check if expected correlation is "正の相関がある" vs "かなり強い..." logic to allow flexible matches if needed
-        // For now, strict match or "stronger includes weaker" logic could be applied.
-        // Current implementation expects exact string match from math util.
-        const currentStrength = stats.strength;
-        const isMatch = currentStrength === quest.expectedStrength || 
-                        (quest.expectedStrength === "正の相関がある" && currentStrength === "かなり強い正の相関がある") ||
-                        (quest.expectedStrength === "負の相関がある" && currentStrength === "かなり強い負の相関がある");
+        // Strict Validation: Check if the pair matches the quest's Target and one of ValidAnswers
+        // Users can swap X and Y, so we must check both combinations.
+        const isTargetX = xKey === quest.targetKey;
+        const isTargetY = yKey === quest.targetKey;
+        
+        let selectedPair = null;
+        if (isTargetX) {
+            selectedPair = yKey;
+        } else if (isTargetY) {
+            selectedPair = xKey;
+        }
 
-        if (isMatch) {
-            setDrillFeedback('correct');
+        // Verify if the partner variable is in the list of valid answers
+        // We also allow relaxed checking for correlation strength if the variable is correct
+        // but strictly enforcing variable name is safer for "Causation vs Correlation" lessons.
+        if (selectedPair && quest.validAnswers.includes(selectedPair)) {
+             setDrillFeedback('correct');
         } else {
-            setDrillFeedback('incorrect');
+             setDrillFeedback('incorrect');
         }
     };
 
