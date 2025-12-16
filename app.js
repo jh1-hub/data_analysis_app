@@ -462,7 +462,7 @@ const App = () => {
     
     // State: Drill
     const [currentQuestIndex, setCurrentQuestIndex] = useState(0);
-    const [drillFeedback, setDrillFeedback] = useState(null); // null | 'correct' | 'incorrect' | 'same_variable'
+    const [drillFeedback, setDrillFeedback] = useState(null); // null | 'correct' | 'incorrect' | 'same_variable' | 'spurious'
     const [showClearModal, setShowClearModal] = useState(false);
 
     // Derived Data
@@ -585,7 +585,6 @@ const App = () => {
         }
 
         // Strict Validation: Check if the pair matches the quest's Target and one of ValidAnswers
-        // Users can swap X and Y, so we must check both combinations.
         const isTargetX = xKey === quest.targetKey;
         const isTargetY = yKey === quest.targetKey;
         
@@ -596,13 +595,24 @@ const App = () => {
             selectedPair = xKey;
         }
 
-        // Verify if the partner variable is in the list of valid answers
-        // We also allow relaxed checking for correlation strength if the variable is correct
-        // but strictly enforcing variable name is safer for "Causation vs Correlation" lessons.
-        if (selectedPair && quest.validAnswers.includes(selectedPair)) {
+        const isCorrectPair = selectedPair && quest.validAnswers.includes(selectedPair);
+
+        if (isCorrectPair) {
              setDrillFeedback('correct');
         } else {
-             setDrillFeedback('incorrect');
+             // Check if it's a "Spurious Correlation" (Accidentally high or Spurious)
+             // Logic: If the strength matches (or is stronger/similar direction) but it's not the right answer.
+             // Here we just check if it matches the expected text description roughly.
+             const currentStrength = stats.strength;
+             const isStrengthMatch = currentStrength === quest.expectedStrength || 
+                                     (quest.expectedStrength === "正の相関がある" && currentStrength === "かなり強い正の相関がある") ||
+                                     (quest.expectedStrength === "負の相関がある" && currentStrength === "かなり強い負の相関がある");
+
+             if (isStrengthMatch) {
+                 setDrillFeedback('spurious');
+             } else {
+                 setDrillFeedback('incorrect');
+             }
         }
     };
 
@@ -611,6 +621,7 @@ const App = () => {
         if (currentQuestIndex < DRILL_QUESTS.length - 1) {
             setCurrentQuestIndex(prev => prev + 1);
         } else {
+            // Fix: Show clear modal but ensure currentQuestIndex stays within bounds for rendering background
             setShowClearModal(true);
         }
     };
@@ -620,7 +631,6 @@ const App = () => {
         setCurrentQuestIndex(0);
         setDrillFeedback(null);
         setMode('drill');
-        // Reset to first quest dataset logic is handled by useEffect on currentQuestIndex
     };
 
     // Safety check to ensure keys are valid when dataset manually changed (Exploration mode mostly)
@@ -630,6 +640,9 @@ const App = () => {
         if (!dataset.columns.find(c => c.key === yKey)) setYKey(dataset.columns.length > 1 ? dataset.columns[1].key : dataset.columns[0].key);
         setExcludedIds([]); // Reset filters
     }, [datasetId, dataset]);
+
+    // Safety check for quest index to prevent crash on last step render
+    const currentQuest = DRILL_QUESTS[currentQuestIndex] || DRILL_QUESTS[0];
 
     return html`
         <div class="h-full flex flex-col bg-gray-50 font-sans">
@@ -671,7 +684,7 @@ const App = () => {
                         <!-- Character & Dialogue -->
                         <div class="flex-shrink-0 flex items-start gap-4 md:w-2/3">
                             <div class="text-4xl md:text-5xl bg-white/10 rounded-full p-2 border-2 border-white/20 shadow-inner">
-                                ${drillFeedback === 'incorrect' || drillFeedback === 'same_variable' ? '🤔' : drillFeedback === 'correct' ? '😎' : '🧐'}
+                                ${drillFeedback === 'incorrect' || drillFeedback === 'same_variable' || drillFeedback === 'spurious' ? '🤔' : drillFeedback === 'correct' ? '😎' : '🧐'}
                             </div>
                             <div>
                                 <div class="flex items-center gap-3 mb-1">
@@ -684,11 +697,11 @@ const App = () => {
                                     </div>
                                 </div>
                                 <h2 class="text-lg md:text-xl font-bold leading-tight mb-1 text-white shadow-black drop-shadow-md">
-                                    ${DRILL_QUESTS[currentQuestIndex].text}
+                                    ${currentQuest.text}
                                 </h2>
                                 ${drillFeedback === 'incorrect' ? html`
                                     <div class="text-orange-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
-                                        ⚠ ヒント: ${DRILL_QUESTS[currentQuestIndex].hint}
+                                        ⚠ ヒント: ${currentQuest.hint}
                                     </div>
                                 ` : drillFeedback === 'incorrect_dataset' ? html`
                                     <div class="text-red-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
@@ -698,9 +711,13 @@ const App = () => {
                                     <div class="text-yellow-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
                                         ⚠ 同じ項目同士だと必ず相関が1.0になってしまうよ。別の項目を比べてみよう！
                                     </div>
+                                ` : drillFeedback === 'spurious' ? html`
+                                    <div class="text-pink-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
+                                        ⚠ 確かに相関はありそうだね！でも、ミッションの意図と合うかな？<br/>「因果関係」や「設問の文章」をもう一度よく読んでみよう！
+                                    </div>
                                 ` : html`
                                     <p class="text-sm text-gray-300">
-                                        探偵の勘: 「${DRILL_QUESTS[currentQuestIndex].hint}」
+                                        探偵の勘: 「${currentQuest.hint}」
                                     </p>
                                 `}
                             </div>
@@ -871,7 +888,7 @@ const App = () => {
             
             <!-- Gamification Overlays -->
             ${drillFeedback === 'correct' && html`
-                <${CorrectOverlay} onNext=${nextQuest} causationNote=${DRILL_QUESTS[currentQuestIndex].causationNote} />
+                <${CorrectOverlay} onNext=${nextQuest} causationNote=${currentQuest.causationNote} />
             `}
 
             ${showClearModal && html`
