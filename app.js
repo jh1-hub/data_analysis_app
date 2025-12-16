@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import htm from 'htm';
@@ -385,11 +386,52 @@ const AnalysisPanel = ({ xLabel, yLabel, correlation, regression, strength, acti
     `;
 };
 
+/**
+ * ドリルクリア時のモーダル
+ */
+const DrillClearModal = ({ onRestart }) => html`
+    <div class="fixed inset-0 bg-black bg-opacity-70 z-[200] flex items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center animate-pop-in relative overflow-hidden border-4 border-yellow-400">
+            <div class="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 bg-yellow-100">
+                <div class="w-full h-full" style="background-image: radial-gradient(#fbbf24 2px, transparent 2px); background-size: 20px 20px;"></div>
+            </div>
+            <div class="relative z-10">
+                <div class="text-6xl mb-4 animate-bounce-slow">🏆</div>
+                <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500 mb-2">MISSION COMPLETE!</h2>
+                <p class="text-gray-600 mb-8 font-bold text-lg">全ミッション達成！<br/>君は立派なデータ探偵だ！</p>
+                
+                <button onClick=${onRestart} class="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transform transition hover:-translate-y-1 text-lg">
+                    最初から遊ぶ
+                </button>
+            </div>
+        </div>
+    </div>
+`;
+
+/**
+ * 正解時のオーバーレイ
+ */
+const CorrectOverlay = ({ onNext }) => html`
+    <div class="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+        <div class="bg-white/95 border-4 border-green-500 shadow-2xl rounded-2xl p-8 flex flex-col items-center pointer-events-auto animate-pop-in max-w-sm mx-4">
+            <div class="text-6xl mb-2">🎉</div>
+            <h3 class="text-2xl font-bold text-green-600 mb-2">EXCELLENT!</h3>
+            <p class="text-gray-600 mb-6 text-center font-bold">その通り！鋭い分析だね。</p>
+            <button 
+                onClick=${onNext}
+                class="px-8 py-3 bg-green-500 text-white rounded-full font-bold shadow-md hover:bg-green-600 transition-transform active:scale-95"
+            >
+                次のミッションへ ➡
+            </button>
+        </div>
+    </div>
+`;
+
 // --- Main App Component ---
 
 const App = () => {
-    // State: Mode
-    const [mode, setMode] = useState('exploration'); // 'exploration' | 'drill'
+    // State: Mode - 初期値を 'drill' に変更
+    const [mode, setMode] = useState('drill'); // 'exploration' | 'drill'
     
     // State: Datasets (Start with presets, allow adding more)
     const [availableDatasets, setAvailableDatasets] = useState(DATASETS);
@@ -408,7 +450,8 @@ const App = () => {
     
     // State: Drill
     const [currentQuestIndex, setCurrentQuestIndex] = useState(0);
-    const [drillFeedback, setDrillFeedback] = useState(null);
+    const [drillFeedback, setDrillFeedback] = useState(null); // null | 'correct' | 'incorrect'
+    const [showClearModal, setShowClearModal] = useState(false);
 
     // Derived Data
     const dataset = useMemo(() => 
@@ -507,6 +550,12 @@ const App = () => {
         const quest = DRILL_QUESTS[currentQuestIndex];
         let isCorrect = false;
 
+        // Ensure dataset is correct first
+        if (datasetId !== quest.datasetId) {
+             setDrillFeedback('incorrect_dataset');
+             return;
+        }
+
         if (quest.datasetId === datasetId) {
              if (quest.expectedCorrelation === "strong_positive" && stats.strength === "強い正の相関") isCorrect = true;
              if (quest.expectedCorrelation === "negative" && stats.strength.includes("負")) isCorrect = true;
@@ -524,10 +573,17 @@ const App = () => {
         if (currentQuestIndex < DRILL_QUESTS.length - 1) {
             setCurrentQuestIndex(prev => prev + 1);
         } else {
-            alert("全クエストクリア！おめでとう！");
-            setMode('exploration');
-            setCurrentQuestIndex(0);
+            setShowClearModal(true);
         }
+    };
+    
+    const restartDrill = () => {
+        setShowClearModal(false);
+        setCurrentQuestIndex(0);
+        setDrillFeedback(null);
+        setMode('drill');
+        // Reset to first quest dataset to be helpful
+        setDatasetId(DRILL_QUESTS[0].datasetId);
     };
 
     // Auto-select first columns & reset selection when dataset changes
@@ -538,58 +594,86 @@ const App = () => {
     }, [datasetId, dataset]);
 
     return html`
-        <div class="h-full flex flex-col bg-gray-50">
+        <div class="h-full flex flex-col bg-gray-50 font-sans">
             <!-- Header -->
             <header class="bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row justify-between items-center shadow-sm z-10 gap-3">
                 <div class="flex items-center space-x-3 md:space-x-4 w-full md:w-auto">
-                    <div class="bg-indigo-600 text-white p-1.5 md:p-2 rounded-lg flex-shrink-0">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-2 rounded-lg flex-shrink-0 shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
                     </div>
                     <div class="min-w-0">
                         <h1 class="text-lg md:text-xl font-bold text-gray-900 truncate">Data Analysis</h1>
-                        <p class="text-xs text-gray-500 truncate">データの活用・分析学習ツール</p>
+                        <p class="text-xs text-gray-500 truncate">データ探偵アカデミー</p>
                     </div>
                 </div>
                 
                 <div class="flex bg-gray-100 p-1 rounded-lg w-full md:w-auto">
                     <button 
-                        class="flex-1 md:flex-none px-3 py-1.5 md:px-4 md:py-2 rounded-md text-xs md:text-sm font-medium transition-colors ${mode === 'exploration' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
-                        onClick=${() => { setMode('exploration'); setDrillFeedback(null); }}
-                    >
-                        自由研究
-                    </button>
-                    <button 
-                        class="flex-1 md:flex-none px-3 py-1.5 md:px-4 md:py-2 rounded-md text-xs md:text-sm font-medium transition-colors ${mode === 'drill' ? 'bg-white text-orange-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}"
+                        class="flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-bold transition-all ${mode === 'drill' ? 'bg-white text-orange-600 shadow-md' : 'text-gray-500 hover:text-gray-700'}"
                         onClick=${() => { setMode('drill'); setDrillFeedback(null); }}
                     >
-                        ドリル
+                        🔎 ドリルモード
+                    </button>
+                    <button 
+                        class="flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-bold transition-all ${mode === 'exploration' ? 'bg-white text-indigo-600 shadow-md' : 'text-gray-500 hover:text-gray-700'}"
+                        onClick=${() => { setMode('exploration'); setDrillFeedback(null); }}
+                    >
+                        📊 自由研究モード
                     </button>
                 </div>
             </header>
 
-            <!-- Drill Mode Controller -->
+            <!-- Drill Mode Controller (Gamified) -->
             ${mode === 'drill' && html`
-                <div class="bg-orange-50 border-b border-orange-200 px-4 py-3 md:px-6 md:py-4 flex-shrink-0">
-                    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                        <div>
-                            <span class="inline-block px-2 py-1 bg-orange-200 text-orange-800 text-xs font-bold rounded mb-1">Quest ${currentQuestIndex + 1}/${DRILL_QUESTS.length}</span>
-                            <h2 class="text-base md:text-lg font-bold text-gray-800 leading-tight">${DRILL_QUESTS[currentQuestIndex].text}</h2>
-                            <p class="text-xs md:text-sm text-gray-600 mt-1">💡 ヒント: ${DRILL_QUESTS[currentQuestIndex].hint}</p>
+                <div class="bg-gradient-to-r from-slate-800 to-indigo-900 text-white px-4 py-4 md:px-6 shadow-lg flex-shrink-0 relative overflow-hidden">
+                    <!-- Background decoration -->
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
+                    
+                    <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 items-start md:items-center relative z-10">
+                        <!-- Character & Dialogue -->
+                        <div class="flex-shrink-0 flex items-start gap-4 md:w-2/3">
+                            <div class="text-4xl md:text-5xl bg-white/10 rounded-full p-2 border-2 border-white/20 shadow-inner">
+                                ${drillFeedback === 'incorrect' ? '🤔' : drillFeedback === 'correct' ? '😎' : '🧐'}
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-3 mb-1">
+                                    <span class="inline-block px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded shadow-sm">
+                                        MISSION ${currentQuestIndex + 1}/${DRILL_QUESTS.length}
+                                    </span>
+                                    <!-- Progress Bar -->
+                                    <div class="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                        <div class="h-full bg-orange-400 transition-all duration-500" style=${{ width: `${((currentQuestIndex) / DRILL_QUESTS.length) * 100}%` }}></div>
+                                    </div>
+                                </div>
+                                <h2 class="text-lg md:text-xl font-bold leading-tight mb-1 text-white shadow-black drop-shadow-md">
+                                    ${DRILL_QUESTS[currentQuestIndex].text}
+                                </h2>
+                                ${drillFeedback === 'incorrect' ? html`
+                                    <div class="text-orange-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
+                                        ⚠ ヒント: ${DRILL_QUESTS[currentQuestIndex].hint}
+                                    </div>
+                                ` : drillFeedback === 'incorrect_dataset' ? html`
+                                    <div class="text-red-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
+                                        ⚠ まずはデータソース設定で、対象のデータセットに切り替えよう！
+                                    </div>
+                                ` : html`
+                                    <p class="text-sm text-gray-300">
+                                        探偵の勘: 「${DRILL_QUESTS[currentQuestIndex].hint}」
+                                    </p>
+                                `}
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-4 w-full md:w-auto justify-end">
-                            ${drillFeedback === 'correct' ? html`
-                                <div class="flex items-center text-green-600 font-bold animate-bounce text-sm md:text-base">
-                                    <span class="text-lg md:text-2xl mr-1 md:mr-2">◎</span> 正解！
-                                </div>
-                                <button onClick=${nextQuest} class="px-3 py-1.5 md:px-4 md:py-2 bg-orange-600 text-white text-sm rounded shadow hover:bg-orange-700">次へ</button>
-                            ` : drillFeedback === 'incorrect' ? html`
-                                <div class="text-red-600 font-bold mr-2 text-sm md:text-base">
-                                    <span class="text-lg md:text-xl mr-1">×</span> 違うよ
-                                </div>
-                                <button onClick=${handleDrillSubmit} class="px-3 py-1.5 md:px-4 md:py-2 bg-white border border-orange-300 text-orange-700 text-sm rounded shadow hover:bg-orange-50">回答</button>
-                            ` : html`
-                                <button onClick=${handleDrillSubmit} class="px-3 py-1.5 md:px-4 md:py-2 bg-orange-600 text-white text-sm rounded shadow hover:bg-orange-700">回答する</button>
-                            `}
+
+                        <!-- Actions -->
+                        <div class="flex-1 w-full flex justify-end md:justify-end items-center">
+                            <button 
+                                onClick=${handleDrillSubmit} 
+                                disabled=${drillFeedback === 'correct'}
+                                class="w-full md:w-auto px-8 py-3 bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold rounded-xl shadow-lg border-b-4 border-orange-800 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2 group"
+                            >
+                                <span>調査報告をする</span>
+                                <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -614,12 +698,15 @@ const App = () => {
                                 <p class="mt-2 text-xs text-gray-500 leading-snug">${dataset.description}</p>
                             </div>
 
-                            <button 
-                                onClick=${() => setShowInputModal(true)}
-                                class="w-full flex items-center justify-center px-4 py-2 border border-dashed border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-md text-sm font-medium transition-colors"
-                            >
-                                ＋ 自分でデータを作る
-                            </button>
+                            <!-- "Create Data" is only visible in Exploration Mode -->
+                            ${mode === 'exploration' && html`
+                                <button 
+                                    onClick=${() => setShowInputModal(true)}
+                                    class="w-full flex items-center justify-center px-4 py-2 border border-dashed border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-md text-sm font-medium transition-colors"
+                                >
+                                    ＋ 自分でデータを作る
+                                </button>
+                            `}
 
                             <button 
                                 onClick=${() => setShowDataWindow(!showDataWindow)}
@@ -633,8 +720,8 @@ const App = () => {
 
                     <${Card} title="変数選択" className="flex-1 lg:h-full min-h-[300px] lg:min-h-0">
                         <div class="space-y-4">
-                            <div class="p-3 bg-blue-50 rounded-md border border-blue-100">
-                                <label class="block text-sm font-bold text-blue-800 mb-1">X軸 (説明変数)</label>
+                            <div class="p-3 bg-blue-50 rounded-md border border-blue-100 transition-colors hover:bg-blue-100">
+                                <label class="block text-sm font-bold text-blue-800 mb-1">X軸 (横の軸)</label>
                                 <select 
                                     class="block w-full border-blue-300 rounded-md focus:ring-blue-500 focus:border-blue-500 sm:text-sm p-2 border bg-white text-gray-900"
                                     value=${xKey}
@@ -643,24 +730,24 @@ const App = () => {
                                     ${dataset.columns.map(c => html`<option key=${c.key} value=${c.key}>${c.label}</option>`)}
                                 </select>
                                 <div class="mt-2 text-xs text-blue-700 flex justify-between px-1">
-                                    <span>Min: ${stats.xStats.min}</span>
-                                    <span>Avg: ${stats.xStats.mean.toFixed(1)}</span>
-                                    <span>Max: ${stats.xStats.max}</span>
+                                    <span>最小: ${stats.xStats.min}</span>
+                                    <span>平均: ${stats.xStats.mean.toFixed(1)}</span>
+                                    <span>最大: ${stats.xStats.max}</span>
                                 </div>
                             </div>
 
                             <div class="flex justify-center items-center">
                                 <button 
                                     onClick=${handleSwapAxes}
-                                    class="p-2 rounded-full hover:bg-gray-100 border border-gray-200 text-gray-500 transition-transform active:scale-95"
+                                    class="p-2 rounded-full hover:bg-gray-100 border border-gray-200 text-gray-500 transition-transform active:scale-95 transform hover:rotate-180 duration-300"
                                     title="軸を入れ替える"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l5-6 5 6"/><path d="M17 14l-5 6-5-6"/></svg>
                                 </button>
                             </div>
 
-                            <div class="p-3 bg-green-50 rounded-md border border-green-100">
-                                <label class="block text-sm font-bold text-green-800 mb-1">Y軸 (目的変数)</label>
+                            <div class="p-3 bg-green-50 rounded-md border border-green-100 transition-colors hover:bg-green-100">
+                                <label class="block text-sm font-bold text-green-800 mb-1">Y軸 (縦の軸)</label>
                                 <select 
                                     class="block w-full border-green-300 rounded-md focus:ring-green-500 focus:border-green-500 sm:text-sm p-2 border bg-white text-gray-900"
                                     value=${yKey}
@@ -669,9 +756,9 @@ const App = () => {
                                     ${dataset.columns.map(c => html`<option key=${c.key} value=${c.key}>${c.label}</option>`)}
                                 </select>
                                 <div class="mt-2 text-xs text-green-700 flex justify-between px-1">
-                                    <span>Min: ${stats.yStats.min}</span>
-                                    <span>Avg: ${stats.yStats.mean.toFixed(1)}</span>
-                                    <span>Max: ${stats.yStats.max}</span>
+                                    <span>最小: ${stats.yStats.min}</span>
+                                    <span>平均: ${stats.yStats.mean.toFixed(1)}</span>
+                                    <span>最大: ${stats.yStats.max}</span>
                                 </div>
                             </div>
                         </div>
@@ -738,6 +825,15 @@ const App = () => {
                     onClose=${() => setShowInputModal(false)}
                     onImport=${handleImportData}
                 />
+            `}
+            
+            <!-- Gamification Overlays -->
+            ${drillFeedback === 'correct' && html`
+                <${CorrectOverlay} onNext=${nextQuest} />
+            `}
+
+            ${showClearModal && html`
+                <${DrillClearModal} onRestart=${restartDrill} />
             `}
         </div>
     `;
