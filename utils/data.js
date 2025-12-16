@@ -17,10 +17,6 @@ export const DATASETS = [
             { key: "gaming_time", label: "ゲーム時間 (分/日)", type: "number", min: 0, max: 300 }
         ],
         data: [
-            // study_time: Strong Positive to score (approx 0.8+)
-            // sleep_time: Positive to score (approx 0.5) - 睡眠も大事だが勉強ほどではない
-            // smartphone_time: Negative/Strong Negative to score
-            // height: No correlation
             { id: 1, study_time: 120, score: 85, smartphone_time: 60, height: 170, sleep_time: 7.5, commute_time: 30, gaming_time: 20 },
             { id: 2, study_time: 30, score: 45, smartphone_time: 180, height: 165, sleep_time: 6.0, commute_time: 15, gaming_time: 180 },
             { id: 3, study_time: 90, score: 78, smartphone_time: 90, height: 172, sleep_time: 7.0, commute_time: 45, gaming_time: 60 },
@@ -51,31 +47,72 @@ export const DATASETS = [
             { key: "temperature", label: "最高気温 (℃)", type: "number", min: 20, max: 40 },
             { key: "customers", label: "来客数 (人)", type: "number", min: 200, max: 1000 },
             { key: "icecream_sales", label: "アイス売上 (個)", type: "number", min: 0, max: 200 },
+            { key: "cold_drink_sales", label: "清涼飲料水売上 (本)", type: "number", min: 0, max: 500 }, // Added
             { key: "hot_coffee_sales", label: "ホットコーヒー売上 (杯)", type: "number", min: 0, max: 100 },
             { key: "umbrella_sales", label: "傘売上 (本)", type: "number", min: 0, max: 50 },
             { key: "rain", label: "降水量 (mm)", type: "number", min: 0, max: 100 }
         ],
         data: [
-            { id: 1, temperature: 35.0, customers: 850, icecream_sales: 180, hot_coffee_sales: 10, umbrella_sales: 0, rain: 0 },
-            { id: 2, temperature: 28.0, customers: 600, icecream_sales: 50, hot_coffee_sales: 40, umbrella_sales: 20, rain: 15 },
-            { id: 3, temperature: 33.5, customers: 800, icecream_sales: 150, hot_coffee_sales: 15, umbrella_sales: 0, rain: 0 },
-            { id: 4, temperature: 24.0, customers: 450, icecream_sales: 20, hot_coffee_sales: 60, umbrella_sales: 45, rain: 50 },
-            { id: 5, temperature: 36.2, customers: 900, icecream_sales: 200, hot_coffee_sales: 5, umbrella_sales: 0, rain: 0 },
-            { id: 6, temperature: 31.0, customers: 700, icecream_sales: 100, hot_coffee_sales: 25, umbrella_sales: 5, rain: 0 },
-            { id: 7, temperature: 22.5, customers: 400, icecream_sales: 15, hot_coffee_sales: 80, umbrella_sales: 30, rain: 20 },
-            { id: 8, temperature: 34.0, customers: 820, icecream_sales: 160, hot_coffee_sales: 12, umbrella_sales: 0, rain: 0 },
-            { id: 9, temperature: 30.5, customers: 680, icecream_sales: 90, hot_coffee_sales: 28, umbrella_sales: 2, rain: 0 },
-            { id: 10, temperature: 29.0, customers: 620, icecream_sales: 70, hot_coffee_sales: 35, umbrella_sales: 10, rain: 5 },
-            { id: 11, temperature: 37.0, customers: 950, icecream_sales: 210, hot_coffee_sales: 5, umbrella_sales: 0, rain: 0 },
-            { id: 12, temperature: 23.0, customers: 420, icecream_sales: 18, hot_coffee_sales: 75, umbrella_sales: 40, rain: 35 },
-            { id: 13, temperature: 32.5, customers: 750, icecream_sales: 130, hot_coffee_sales: 18, umbrella_sales: 0, rain: 0 },
-            { id: 14, temperature: 27.5, customers: 580, icecream_sales: 45, hot_coffee_sales: 45, umbrella_sales: 15, rain: 10 },
-            { id: 15, temperature: 35.5, customers: 880, icecream_sales: 190, hot_coffee_sales: 8, umbrella_sales: 0, rain: 0 },
-            { id: 16, temperature: 30.0, customers: 650, icecream_sales: 80, hot_coffee_sales: 30, umbrella_sales: 0, rain: 0 },
-            { id: 17, temperature: 25.0, customers: 500, icecream_sales: 30, hot_coffee_sales: 55, umbrella_sales: 25, rain: 12 },
-            { id: 18, temperature: 34.5, customers: 830, icecream_sales: 170, hot_coffee_sales: 10, umbrella_sales: 0, rain: 0 },
-            { id: 19, temperature: 21.0, customers: 350, icecream_sales: 10, hot_coffee_sales: 90, umbrella_sales: 50, rain: 60 },
-            { id: 20, temperature: 31.5, customers: 720, icecream_sales: 110, hot_coffee_sales: 22, umbrella_sales: 0, rain: 0 }
+            // Cold drinks strongly correlate with Temperature (and thus with Ice Cream)
+            { id: 1, temperature: 35.0, customers: 850, icecream_sales: 180, cold_drink_sales: 450, hot_coffee_sales: 10, umbrella_sales: 0, rain: 0 },
+            { id: 2, temperature: 28.0, customers: 600, icecream_sales: 50, cold_drink_sales: 200, hot_coffee_sales: 40, umbrella_sales: 20, rain: 15 },
+            { id: 3, temperature: 33.5, customers: 800, icecream_sales: 150, cold_drink_sales: 400, hot_coffee_sales: 15, umbrella_sales: 0, rain: 0 },
+            { id: 4, temperature: 24.0, customers: 450, icecream_sales: 20, cold_drink_sales: 120, hot_coffee_sales: 60, umbrella_sales: 45, rain: 50 },
+            { id: 5, temperature: 36.2, customers: 900, icecream_sales: 200, cold_drink_sales: 480, hot_coffee_sales: 5, umbrella_sales: 0, rain: 0 },
+            { id: 6, temperature: 31.0, customers: 700, icecream_sales: 100, cold_drink_sales: 320, hot_coffee_sales: 25, umbrella_sales: 5, rain: 0 },
+            { id: 7, temperature: 22.5, customers: 400, icecream_sales: 15, cold_drink_sales: 100, hot_coffee_sales: 80, umbrella_sales: 30, rain: 20 },
+            { id: 8, temperature: 34.0, customers: 820, icecream_sales: 160, cold_drink_sales: 430, hot_coffee_sales: 12, umbrella_sales: 0, rain: 0 },
+            { id: 9, temperature: 30.5, customers: 680, icecream_sales: 90, cold_drink_sales: 300, hot_coffee_sales: 28, umbrella_sales: 2, rain: 0 },
+            { id: 10, temperature: 29.0, customers: 620, icecream_sales: 70, cold_drink_sales: 250, hot_coffee_sales: 35, umbrella_sales: 10, rain: 5 },
+            { id: 11, temperature: 37.0, customers: 950, icecream_sales: 210, cold_drink_sales: 490, hot_coffee_sales: 5, umbrella_sales: 0, rain: 0 },
+            { id: 12, temperature: 23.0, customers: 420, icecream_sales: 18, cold_drink_sales: 110, hot_coffee_sales: 75, umbrella_sales: 40, rain: 35 },
+            { id: 13, temperature: 32.5, customers: 750, icecream_sales: 130, cold_drink_sales: 380, hot_coffee_sales: 18, umbrella_sales: 0, rain: 0 },
+            { id: 14, temperature: 27.5, customers: 580, icecream_sales: 45, cold_drink_sales: 190, hot_coffee_sales: 45, umbrella_sales: 15, rain: 10 },
+            { id: 15, temperature: 35.5, customers: 880, icecream_sales: 190, cold_drink_sales: 460, hot_coffee_sales: 8, umbrella_sales: 0, rain: 0 },
+            { id: 16, temperature: 30.0, customers: 650, icecream_sales: 80, cold_drink_sales: 280, hot_coffee_sales: 30, umbrella_sales: 0, rain: 0 },
+            { id: 17, temperature: 25.0, customers: 500, icecream_sales: 30, cold_drink_sales: 150, hot_coffee_sales: 55, umbrella_sales: 25, rain: 12 },
+            { id: 18, temperature: 34.5, customers: 830, icecream_sales: 170, cold_drink_sales: 440, hot_coffee_sales: 10, umbrella_sales: 0, rain: 0 },
+            { id: 19, temperature: 21.0, customers: 350, icecream_sales: 10, cold_drink_sales: 80, hot_coffee_sales: 90, umbrella_sales: 50, rain: 60 },
+            { id: 20, temperature: 31.5, customers: 720, icecream_sales: 110, cold_drink_sales: 330, hot_coffee_sales: 22, umbrella_sales: 0, rain: 0 }
+        ]
+    },
+    {
+        id: "rpg_game",
+        name: "RPGキャラクターのステータス",
+        description: "あるRPGゲームのプレイヤーキャラクター20体のステータスデータ。",
+        columns: [
+            { key: "level", label: "レベル", type: "number", min: 1, max: 50 },
+            { key: "hp", label: "最大HP", type: "number", min: 100, max: 5000 },
+            { key: "attack", label: "攻撃力", type: "number", min: 10, max: 200 },
+            { key: "speed", label: "素早さ", type: "number", min: 0, max: 100 },
+            { key: "equip_weight", label: "装備重量", type: "number", min: 0, max: 100 },
+            { key: "luck", label: "運", type: "number", min: 0, max: 100 }
+        ],
+        data: [
+            // Level drives HP and Attack.
+            // Weight negative correlates with Speed.
+            // Luck is random.
+            { id: 1, level: 10, hp: 500, attack: 30, speed: 80, equip_weight: 10, luck: 50 },
+            { id: 2, level: 45, hp: 4500, attack: 180, speed: 20, equip_weight: 90, luck: 10 },
+            { id: 3, level: 25, hp: 2500, attack: 100, speed: 50, equip_weight: 50, luck: 80 },
+            { id: 4, level: 5, hp: 300, attack: 15, speed: 70, equip_weight: 15, luck: 20 },
+            { id: 5, level: 50, hp: 4800, attack: 195, speed: 90, equip_weight: 5, luck: 90 }, // High level glass cannon (Low weight high speed) - outlier to general trend? No, let's keep trend simple.
+            // Let's make Weight vs Speed consistently Negative.
+            { id: 6, level: 30, hp: 3000, attack: 120, speed: 40, equip_weight: 60, luck: 40 },
+            { id: 7, level: 15, hp: 1500, attack: 60, speed: 60, equip_weight: 30, luck: 60 },
+            { id: 8, level: 40, hp: 4000, attack: 160, speed: 30, equip_weight: 70, luck: 30 },
+            { id: 9, level: 20, hp: 2000, attack: 80, speed: 55, equip_weight: 40, luck: 55 },
+            { id: 10, level: 35, hp: 3500, attack: 140, speed: 35, equip_weight: 65, luck: 45 },
+            { id: 11, level: 12, hp: 1200, attack: 45, speed: 65, equip_weight: 25, luck: 25 },
+            { id: 12, level: 48, hp: 4700, attack: 190, speed: 15, equip_weight: 95, luck: 15 },
+            { id: 13, level: 22, hp: 2200, attack: 90, speed: 52, equip_weight: 45, luck: 75 },
+            { id: 14, level: 8, hp: 400, attack: 25, speed: 75, equip_weight: 12, luck: 85 },
+            { id: 15, level: 42, hp: 4200, attack: 170, speed: 25, equip_weight: 80, luck: 5 },
+            { id: 16, level: 18, hp: 1800, attack: 70, speed: 58, equip_weight: 35, luck: 95 },
+            { id: 17, level: 38, hp: 3800, attack: 150, speed: 28, equip_weight: 75, luck: 35 },
+            { id: 18, level: 28, hp: 2800, attack: 110, speed: 45, equip_weight: 55, luck: 65 },
+            { id: 19, level: 4, hp: 250, attack: 12, speed: 85, equip_weight: 8, luck: 12 },
+            { id: 20, level: 33, hp: 3300, attack: 130, speed: 38, equip_weight: 62, luck: 70 }
         ]
     }
 ];
@@ -86,49 +123,69 @@ export const DRILL_QUESTS = [
         text: "「勉強時間」と「かなり強い正の相関がある」項目を探そう。",
         datasetId: "students",
         initialX: "study_time",
-        initialY: "height", // Initial incorrect answer (Uncorrelated)
+        initialY: "height",
         expectedStrength: "かなり強い正の相関がある",
-        hint: "勉強を頑張れば頑張るほど、明確に上がる数値は？（睡眠時間も関係するけど、もっと直接的な結果は？）"
+        hint: "勉強を頑張れば頑張るほど、明確に上がる数値は？",
+        causationNote: "【因果関係あり】勉強時間が増えたことが原因で、成績が上がったと考えられます。"
     },
     {
         id: 2,
         text: "「スマホ使用時間」と「かなり強い負の相関がある」項目を探そう。",
         datasetId: "students",
         initialX: "smartphone_time",
-        initialY: "height", // Initial incorrect answer (Uncorrelated)
+        initialY: "height",
         expectedStrength: "かなり強い負の相関がある",
-        hint: "スマホばかり見ていると、勉強時間が減って...何が下がるかな？"
+        hint: "スマホ時間が増えると、逆に減ってしまう大事な結果は？",
+        causationNote: "【因果関係の可能性】スマホに時間を使いすぎて勉強時間が減ったことが、成績低下の原因かもしれません。"
     },
     {
         id: 3,
-        text: "「最高気温」と「かなり強い正の相関がある」商品を探そう。",
-        datasetId: "convenience",
-        initialX: "temperature",
-        initialY: "customers", // Initial incorrect answer (Weak positive or uncorrelated depending on rain)
-        expectedStrength: "かなり強い正の相関がある",
-        hint: "猛暑の日に、飛ぶように売れる冷たいものは？"
+        text: "RPGデータ：「装備重量」と「負の相関（または強い負の相関）」がある項目は？",
+        datasetId: "rpg_game",
+        initialX: "equip_weight",
+        initialY: "hp",
+        expectedStrength: "負の相関がある", // Depending on data generation it might be strong or just negative
+        hint: "重たい鎧を着ると、キャラクターの動きはどうなるかな？",
+        causationNote: "【因果関係あり】装備が重いことが原因で、動くスピードが遅くなっています。"
     },
     {
         id: 4,
-        text: "「降水量」と「かなり強い正の相関がある」商品を探そう。",
+        text: "「最高気温」と「かなり強い正の相関がある」飲み物はどっち？",
         datasetId: "convenience",
-        initialX: "rain",
-        initialY: "hot_coffee_sales", // Initial incorrect answer (Weak/No correlation)
+        initialX: "temperature",
+        initialY: "customers",
         expectedStrength: "かなり強い正の相関がある",
-        hint: "雨が降れば降るほど売れる、雨具といえば？"
+        hint: "暑い日に飲みたくなるのは、ホットコーヒー？それとも清涼飲料水？",
+        causationNote: "【因果関係あり】気温が高いことが原因で、冷たい飲み物が売れています。"
     },
     {
         id: 5,
-        text: "「ゲーム時間」と「正の相関がある」（強い相関ではない）項目はあるかな？",
-        datasetId: "students",
-        initialX: "gaming_time",
-        initialY: "score", // Initial incorrect answer (Negative)
-        expectedStrength: "正の相関がある",
-        hint: "ゲーム時間が長い人は、他にどんな時間が長い傾向があるだろう？（スマホも似たような娯楽だよね）"
+        text: "★難問★ 「アイス売上」と「かなり強い正の相関」がある別の商品は？",
+        datasetId: "convenience",
+        initialX: "icecream_sales",
+        initialY: "customers", 
+        expectedStrength: "かなり強い正の相関がある",
+        hint: "アイスが売れる暑い日は、他の冷たいものも売れているはず！",
+        causationNote: "【重要：因果関係なし！】アイスが売れたからジュースが売れたわけではありません。「気温が高い」という共通の原因があるため、両方売れたのです。これを「擬似相関」と呼びます。"
     },
-    // Quest 5 tricky adjustment: In current data, gaming and smartphone are somewhat correlated.
-    // Let's verify data consistency:
-    // id 2: gaming 180, smartphone 180. id 19: gaming 240, smartphone 300.
-    // This implies positive correlation. We will aim for "正の相関がある" (0.4-0.7) or "かなり強い" (>0.7) depending on actual r.
-    // I will adjust Quest 5 expectedStrength dynamically if needed, but "正の相関がある" is a good target for variety.
+    {
+        id: 6,
+        text: "RPGデータ：「レベル」と「かなり強い正の相関」があるステータスは？",
+        datasetId: "rpg_game",
+        initialX: "level",
+        initialY: "luck",
+        expectedStrength: "かなり強い正の相関がある",
+        hint: "レベルが上がると、キャラクターの体力はどうなる？",
+        causationNote: "【因果関係あり】レベルアップという仕組みによって、HPが上昇するようにプログラムされています。"
+    },
+    {
+        id: 7,
+        text: "「雨の降水量」と「正の相関」がある売上データを探せ！",
+        datasetId: "convenience",
+        initialX: "rain",
+        initialY: "icecream_sales",
+        expectedStrength: "正の相関がある",
+        hint: "雨が降れば降るほど、必要になって売れるものは？",
+        causationNote: "【因果関係あり】雨が降ったことが原因で、傘を必要とする人が増えました。"
+    }
 ];

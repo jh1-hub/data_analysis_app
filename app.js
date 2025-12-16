@@ -411,14 +411,24 @@ const DrillClearModal = ({ onRestart }) => html`
 `;
 
 /**
- * 正解時のオーバーレイ
+ * 正解時のオーバーレイ (Updated with Causation Note)
  */
-const CorrectOverlay = ({ onNext }) => html`
+const CorrectOverlay = ({ onNext, causationNote }) => html`
     <div class="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
-        <div class="bg-white/95 border-4 border-green-500 shadow-2xl rounded-2xl p-8 flex flex-col items-center pointer-events-auto animate-pop-in max-w-sm mx-4">
+        <div class="bg-white/95 border-4 border-green-500 shadow-2xl rounded-2xl p-8 flex flex-col items-center pointer-events-auto animate-pop-in max-w-lg mx-4">
             <div class="text-6xl mb-2">🎉</div>
             <h3 class="text-2xl font-bold text-green-600 mb-2">EXCELLENT!</h3>
-            <p class="text-gray-600 mb-6 text-center font-bold">その通り！鋭い分析だね。</p>
+            <p class="text-gray-600 mb-4 text-center font-bold">その通り！鋭い分析だね。</p>
+            
+            ${causationNote && html`
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 text-sm text-left w-full rounded">
+                    <h4 class="font-bold text-yellow-800 flex items-center mb-1">
+                        <span class="mr-2">💡</span>探偵メモ
+                    </h4>
+                    <p class="text-yellow-900 leading-relaxed">${causationNote}</p>
+                </div>
+            `}
+
             <button 
                 onClick=${onNext}
                 class="px-8 py-3 bg-green-500 text-white rounded-full font-bold shadow-md hover:bg-green-600 transition-transform active:scale-95"
@@ -452,7 +462,7 @@ const App = () => {
     
     // State: Drill
     const [currentQuestIndex, setCurrentQuestIndex] = useState(0);
-    const [drillFeedback, setDrillFeedback] = useState(null); // null | 'correct' | 'incorrect'
+    const [drillFeedback, setDrillFeedback] = useState(null); // null | 'correct' | 'incorrect' | 'same_variable'
     const [showClearModal, setShowClearModal] = useState(false);
 
     // Derived Data
@@ -568,7 +578,22 @@ const App = () => {
              return;
         }
 
-        if (stats.strength === quest.expectedStrength) {
+        // Prevent selecting the same variable
+        if (xKey === yKey) {
+            setDrillFeedback('same_variable');
+            return;
+        }
+
+        // Check correlation strength matches
+        // Also check if expected correlation is "正の相関がある" vs "かなり強い..." logic to allow flexible matches if needed
+        // For now, strict match or "stronger includes weaker" logic could be applied.
+        // Current implementation expects exact string match from math util.
+        const currentStrength = stats.strength;
+        const isMatch = currentStrength === quest.expectedStrength || 
+                        (quest.expectedStrength === "正の相関がある" && currentStrength === "かなり強い正の相関がある") ||
+                        (quest.expectedStrength === "負の相関がある" && currentStrength === "かなり強い負の相関がある");
+
+        if (isMatch) {
             setDrillFeedback('correct');
         } else {
             setDrillFeedback('incorrect');
@@ -640,7 +665,7 @@ const App = () => {
                         <!-- Character & Dialogue -->
                         <div class="flex-shrink-0 flex items-start gap-4 md:w-2/3">
                             <div class="text-4xl md:text-5xl bg-white/10 rounded-full p-2 border-2 border-white/20 shadow-inner">
-                                ${drillFeedback === 'incorrect' ? '🤔' : drillFeedback === 'correct' ? '😎' : '🧐'}
+                                ${drillFeedback === 'incorrect' || drillFeedback === 'same_variable' ? '🤔' : drillFeedback === 'correct' ? '😎' : '🧐'}
                             </div>
                             <div>
                                 <div class="flex items-center gap-3 mb-1">
@@ -662,6 +687,10 @@ const App = () => {
                                 ` : drillFeedback === 'incorrect_dataset' ? html`
                                     <div class="text-red-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
                                         ⚠ まずはデータソース設定で、対象のデータセットに切り替えよう！
+                                    </div>
+                                ` : drillFeedback === 'same_variable' ? html`
+                                    <div class="text-yellow-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
+                                        ⚠ 同じ項目同士だと必ず相関が1.0になってしまうよ。別の項目を比べてみよう！
                                     </div>
                                 ` : html`
                                     <p class="text-sm text-gray-300">
@@ -836,7 +865,7 @@ const App = () => {
             
             <!-- Gamification Overlays -->
             ${drillFeedback === 'correct' && html`
-                <${CorrectOverlay} onNext=${nextQuest} />
+                <${CorrectOverlay} onNext=${nextQuest} causationNote=${DRILL_QUESTS[currentQuestIndex].causationNote} />
             `}
 
             ${showClearModal && html`
