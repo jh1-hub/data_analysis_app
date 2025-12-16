@@ -25,6 +25,80 @@ const Card = ({ title, children, className = "" }) => html`
 `;
 
 /**
+ * データ入力モーダル
+ */
+const DataInputModal = ({ onClose, onImport }) => {
+    const [name, setName] = useState("");
+    const [text, setText] = useState("身長,体重\n170,60\n165,55\n180,75\n155,48\n172,68");
+    const [error, setError] = useState("");
+
+    const handleSave = () => {
+        setError("");
+        if (!name.trim()) {
+            setError("データセット名を入力してください。");
+            return;
+        }
+        if (!text.trim()) {
+            setError("データを入力してください。");
+            return;
+        }
+        onImport(name, text);
+    };
+
+    return html`
+        <div class="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] animate-fade-in-up">
+                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
+                    <h3 class="text-lg font-bold text-gray-800">新しいデータを作る</h3>
+                    <button onClick=${onClose} class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 transition-colors">×</button>
+                </div>
+                
+                <div class="p-6 overflow-y-auto space-y-5">
+                    ${error && html`
+                        <div class="bg-red-50 text-red-600 px-4 py-2 rounded text-sm border border-red-100 flex items-center">
+                            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            ${error}
+                        </div>
+                    `}
+                    
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">データセット名</label>
+                        <input 
+                            type="text" 
+                            class="w-full border border-gray-300 rounded-md p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow"
+                            placeholder="例: クラスの身長と体重"
+                            value=${name}
+                            onInput=${e => setName(e.target.value)}
+                        />
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <label class="block text-sm font-bold text-gray-700">データ (CSV形式)</label>
+                            <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">ExcelからコピペOK</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-2">1行目に見出し、2行目以降に数値をカンマ(,)区切りで入力。</p>
+                        <textarea 
+                            class="w-full h-48 border border-gray-300 rounded-md p-2.5 font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-shadow leading-relaxed"
+                            placeholder="身長,体重&#10;170,60&#10;165,55"
+                            value=${text}
+                            onInput=${e => setText(e.target.value)}
+                        ></textarea>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 border-t border-gray-100 flex justify-end space-x-3 bg-gray-50 rounded-b-xl">
+                    <button onClick=${onClose} class="px-4 py-2 text-gray-600 hover:bg-white hover:text-gray-800 border border-transparent hover:border-gray-200 rounded-md transition-all">キャンセル</button>
+                    <button onClick=${handleSave} class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 shadow-sm font-medium transition-colors flex items-center">
+                        <span class="mr-1">＋</span> 作成する
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+/**
  * フローティングデータウィンドウ
  */
 const FloatingDataWindow = ({ data, columns, excludedIds, onTogglePoint, onClose }) => {
@@ -144,8 +218,8 @@ const ScatterVis = ({ data, xConfig, yConfig, regression, excludedIds, onToggleP
         const maxY = Math.max(...yValues);
         
         // 少し余白を持たせる
-        const padX = (maxX - minX) * 0.1;
-        const padY = (maxY - minY) * 0.1;
+        const padX = (maxX - minX) * 0.1 || 1; // prevent 0 range
+        const padY = (maxY - minY) * 0.1 || 1;
 
         return {
             x: [Math.floor(minX - padX), Math.ceil(maxX + padX)],
@@ -314,9 +388,14 @@ const AnalysisPanel = ({ xLabel, yLabel, correlation, regression, strength, acti
 // --- Main App Component ---
 
 const App = () => {
-    // State: Mode & Data
+    // State: Mode
     const [mode, setMode] = useState('exploration'); // 'exploration' | 'drill'
+    
+    // State: Datasets (Start with presets, allow adding more)
+    const [availableDatasets, setAvailableDatasets] = useState(DATASETS);
     const [datasetId, setDatasetId] = useState(DATASETS[0].id);
+    
+    // State: Columns
     const [xKey, setXKey] = useState(DATASETS[0].columns[0].key);
     const [yKey, setYKey] = useState(DATASETS[0].columns[1].key);
     
@@ -325,21 +404,25 @@ const App = () => {
 
     // State: UI
     const [showDataWindow, setShowDataWindow] = useState(false);
+    const [showInputModal, setShowInputModal] = useState(false);
     
     // State: Drill
     const [currentQuestIndex, setCurrentQuestIndex] = useState(0);
     const [drillFeedback, setDrillFeedback] = useState(null);
 
     // Derived Data
-    const dataset = useMemo(() => DATASETS.find(d => d.id === datasetId), [datasetId]);
-    const xColumn = useMemo(() => dataset.columns.find(c => c.key === xKey), [dataset, xKey]);
-    const yColumn = useMemo(() => dataset.columns.find(c => c.key === yKey), [dataset, yKey]);
+    const dataset = useMemo(() => 
+        availableDatasets.find(d => d.id === datasetId) || availableDatasets[0], 
+    [datasetId, availableDatasets]);
+    
+    const xColumn = useMemo(() => dataset.columns.find(c => c.key === xKey) || dataset.columns[0], [dataset, xKey]);
+    const yColumn = useMemo(() => dataset.columns.find(c => c.key === yKey) || dataset.columns[1], [dataset, yKey]);
     
     // Statistics Calculation (Active data only)
     const stats = useMemo(() => {
         const activeData = dataset.data.filter(d => !excludedIds.includes(d.id));
-        const xData = activeData.map(d => d[xKey]);
-        const yData = activeData.map(d => d[yKey]);
+        const xData = activeData.map(d => d[xColumn.key]);
+        const yData = activeData.map(d => d[yColumn.key]);
         
         // Handle empty selection
         if (xData.length === 0) {
@@ -350,7 +433,7 @@ const App = () => {
         const reg = MathUtils.calculateRegression(xData, yData);
         const str = MathUtils.getCorrelationStrength(r);
         return { correlation: r, regression: reg, strength: str, activeCount: xData.length };
-    }, [dataset, xKey, yKey, excludedIds]);
+    }, [dataset, xColumn, yColumn, excludedIds]);
 
     // Handlers
     const togglePoint = (id) => {
@@ -362,6 +445,45 @@ const App = () => {
     const handleSwapAxes = () => {
         setXKey(yKey);
         setYKey(xKey);
+    };
+
+    const handleImportData = (name, csvText) => {
+        const lines = csvText.trim().split(/\r?\n/).filter(l => l.trim() !== "");
+        if (lines.length < 2) {
+            alert("データは少なくとも2行（見出し＋データ）必要です");
+            return;
+        }
+
+        const headers = lines[0].split(",").map(h => h.trim());
+        const columns = headers.map((h, i) => ({ 
+            key: `col_${i}`, 
+            label: h, 
+            type: 'number' 
+        }));
+
+        const rawData = lines.slice(1).map((line, idx) => {
+            // Split line but respect that CSV might have fewer cols than header sometimes? No, assume valid.
+            const values = line.split(",").map(v => v.trim());
+            const row = { id: idx + 1 };
+            columns.forEach((col, i) => {
+                const val = parseFloat(values[i]);
+                row[col.key] = isNaN(val) ? 0 : val;
+            });
+            return row;
+        });
+
+        const newDataset = {
+            id: `custom_${Date.now()}`,
+            name: name,
+            description: "ユーザーが作成したカスタムデータセット",
+            columns: columns,
+            data: rawData
+        };
+
+        setAvailableDatasets([...availableDatasets, newDataset]);
+        setDatasetId(newDataset.id);
+        setShowInputModal(false);
+        setExcludedIds([]);
     };
 
     const handleDrillSubmit = () => {
@@ -394,9 +516,9 @@ const App = () => {
     // Auto-select first columns & reset selection when dataset changes
     useEffect(() => {
         if (!dataset.columns.find(c => c.key === xKey)) setXKey(dataset.columns[0].key);
-        if (!dataset.columns.find(c => c.key === yKey)) setYKey(dataset.columns[1].key);
+        if (!dataset.columns.find(c => c.key === yKey)) setYKey(dataset.columns.length > 1 ? dataset.columns[1].key : dataset.columns[0].key);
         setExcludedIds([]); // Reset filters
-    }, [datasetId]);
+    }, [datasetId, dataset]);
 
     return html`
         <div class="h-full flex flex-col bg-gray-50">
@@ -464,24 +586,31 @@ const App = () => {
                     <${Card} title="データ設定" className="flex-none">
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">データセット選択</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">データソース</label>
                                 <select 
                                     class="block w-full border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2 border bg-gray-50"
                                     value=${datasetId}
                                     onChange=${(e) => setDatasetId(e.target.value)}
                                 >
-                                    ${DATASETS.map(d => html`<option key=${d.id} value=${d.id}>${d.name}</option>`)}
+                                    ${availableDatasets.map(d => html`<option key=${d.id} value=${d.id}>${d.name}</option>`)}
                                 </select>
                                 <p class="mt-2 text-xs text-gray-500 leading-snug">${dataset.description}</p>
                             </div>
 
                             <button 
+                                onClick=${() => setShowInputModal(true)}
+                                class="w-full flex items-center justify-center px-4 py-2 border border-dashed border-indigo-300 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-md text-sm font-medium transition-colors"
+                            >
+                                ＋ 自分でデータを作る
+                            </button>
+
+                            <button 
                                 onClick=${() => setShowDataWindow(!showDataWindow)}
                                 class="w-full flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                             >
-                                ${showDataWindow ? 'データ選択・一覧' : 'データ選択・一覧'}
+                                ${showDataWindow ? 'データ一覧を閉じる' : 'データ一覧・選択'}
                             </button>
-                            <p class="text-xs text-gray-400 text-center">※ グラフ上の点をクリックしても除外できます</p>
+                            <p class="text-xs text-gray-400 text-center">※ グラフ上の点をクリックして一時的に除外可能</p>
                         </div>
                     </${Card}>
 
@@ -573,6 +702,14 @@ const App = () => {
                     excludedIds=${excludedIds}
                     onTogglePoint=${togglePoint}
                     onClose=${() => setShowDataWindow(false)} 
+                />
+            `}
+            
+            <!-- Input Modal -->
+            ${showInputModal && html`
+                <${DataInputModal} 
+                    onClose=${() => setShowInputModal(false)}
+                    onImport=${handleImportData}
                 />
             `}
         </div>
