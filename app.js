@@ -512,9 +512,11 @@ const App = () => {
     useEffect(() => {
         if (mode === 'drill') {
             const quest = DRILL_QUESTS[currentQuestIndex];
-            setDatasetId(quest.datasetId);
-            setXKey(quest.initialX);
-            setYKey(quest.initialY);
+            if (quest) {
+                setDatasetId(quest.datasetId);
+                setXKey(quest.initialX);
+                setYKey(quest.initialY);
+            }
             setDrillFeedback(null);
         }
     }, [currentQuestIndex, mode]);
@@ -605,8 +607,9 @@ const App = () => {
              // Here we just check if it matches the expected text description roughly.
              const currentStrength = stats.strength;
              const isStrengthMatch = currentStrength === quest.expectedStrength || 
-                                     (quest.expectedStrength === "正の相関がある" && currentStrength === "かなり強い正の相関がある") ||
-                                     (quest.expectedStrength === "負の相関がある" && currentStrength === "かなり強い負の相関がある");
+                                     (quest.expectedStrength === "かなり強い正の相関がある" && currentStrength.includes("正の相関")) ||
+                                     (quest.expectedStrength === "かなり強い負の相関がある" && currentStrength.includes("負の相関")) || 
+                                     (currentStrength === quest.expectedStrength);
 
              if (isStrengthMatch) {
                  setDrillFeedback('spurious');
@@ -621,7 +624,7 @@ const App = () => {
         if (currentQuestIndex < DRILL_QUESTS.length - 1) {
             setCurrentQuestIndex(prev => prev + 1);
         } else {
-            // Fix: Show clear modal but ensure currentQuestIndex stays within bounds for rendering background
+            // End of drills
             setShowClearModal(true);
         }
     };
@@ -641,8 +644,9 @@ const App = () => {
         setExcludedIds([]); // Reset filters
     }, [datasetId, dataset]);
 
-    // Safety check for quest index to prevent crash on last step render
-    const currentQuest = DRILL_QUESTS[currentQuestIndex] || DRILL_QUESTS[0];
+    // Safe access for display, prevents crash when currentQuestIndex = length
+    const displayQuestIndex = Math.min(currentQuestIndex, DRILL_QUESTS.length - 1);
+    const currentQuest = DRILL_QUESTS[displayQuestIndex];
 
     return html`
         <div class="h-full flex flex-col bg-gray-50 font-sans">
@@ -689,11 +693,11 @@ const App = () => {
                             <div>
                                 <div class="flex items-center gap-3 mb-1">
                                     <span class="inline-block px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded shadow-sm">
-                                        MISSION ${currentQuestIndex + 1}/${DRILL_QUESTS.length}
+                                        MISSION ${displayQuestIndex + 1}/${DRILL_QUESTS.length}
                                     </span>
                                     <!-- Progress Bar -->
                                     <div class="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-                                        <div class="h-full bg-orange-400 transition-all duration-500" style=${{ width: `${((currentQuestIndex) / DRILL_QUESTS.length) * 100}%` }}></div>
+                                        <div class="h-full bg-orange-400 transition-all duration-500" style=${{ width: `${((displayQuestIndex) / DRILL_QUESTS.length) * 100}%` }}></div>
                                     </div>
                                 </div>
                                 <h2 class="text-lg md:text-xl font-bold leading-tight mb-1 text-white shadow-black drop-shadow-md">

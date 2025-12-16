@@ -18,28 +18,28 @@ export const DATASETS = [
         ],
         data: [
             // study_time: Strong Positive to score
-            // sleep_time: Adjusted to have very weak correlation with score/study_time
-            // smartphone_time: Negative/Strong Negative to score
-            { id: 1, study_time: 120, score: 85, smartphone_time: 60, height: 170, sleep_time: 6.5, commute_time: 30, gaming_time: 20 },
-            { id: 2, study_time: 30, score: 45, smartphone_time: 180, height: 165, sleep_time: 7.0, commute_time: 15, gaming_time: 180 },
-            { id: 3, study_time: 90, score: 78, smartphone_time: 90, height: 172, sleep_time: 6.0, commute_time: 45, gaming_time: 60 },
-            { id: 4, study_time: 150, score: 92, smartphone_time: 45, height: 168, sleep_time: 7.5, commute_time: 20, gaming_time: 10 },
-            { id: 5, study_time: 60, score: 60, smartphone_time: 120, height: 175, sleep_time: 8.0, commute_time: 60, gaming_time: 90 },
-            { id: 6, study_time: 10, score: 30, smartphone_time: 240, height: 160, sleep_time: 6.5, commute_time: 25, gaming_time: 200 },
-            { id: 7, study_time: 180, score: 98, smartphone_time: 30, height: 171, sleep_time: 5.5, commute_time: 50, gaming_time: 0 }, // High score, low sleep
-            { id: 8, study_time: 75, score: 70, smartphone_time: 100, height: 178, sleep_time: 8.5, commute_time: 10, gaming_time: 60 }, // Avg score, high sleep
-            { id: 9, study_time: 45, score: 55, smartphone_time: 150, height: 166, sleep_time: 6.0, commute_time: 40, gaming_time: 120 },
-            { id: 10, study_time: 110, score: 82, smartphone_time: 70, height: 169, sleep_time: 7.0, commute_time: 35, gaming_time: 30 },
-            { id: 11, study_time: 130, score: 88, smartphone_time: 50, height: 173, sleep_time: 6.5, commute_time: 15, gaming_time: 20 },
-            { id: 12, study_time: 20, score: 40, smartphone_time: 200, height: 158, sleep_time: 8.0, commute_time: 55, gaming_time: 150 }, // Low score, high sleep
+            // sleep_time: Randomized to have NO correlation with study_time/score
+            // (High Score & High Sleep, High Score & Low Sleep, Low Score & High Sleep, etc.)
+            { id: 1, study_time: 120, score: 85, smartphone_time: 60, height: 170, sleep_time: 7.5, commute_time: 30, gaming_time: 20 },
+            { id: 2, study_time: 30, score: 45, smartphone_time: 180, height: 165, sleep_time: 6.0, commute_time: 15, gaming_time: 180 }, // Low score, Low sleep
+            { id: 3, study_time: 90, score: 78, smartphone_time: 90, height: 172, sleep_time: 7.0, commute_time: 45, gaming_time: 60 },
+            { id: 4, study_time: 150, score: 92, smartphone_time: 45, height: 168, sleep_time: 6.0, commute_time: 20, gaming_time: 10 }, // High score, Low sleep
+            { id: 5, study_time: 60, score: 60, smartphone_time: 120, height: 175, sleep_time: 8.5, commute_time: 60, gaming_time: 90 }, // Avg score, High sleep
+            { id: 6, study_time: 10, score: 30, smartphone_time: 240, height: 160, sleep_time: 5.0, commute_time: 25, gaming_time: 200 }, // Low score, Low sleep
+            { id: 7, study_time: 180, score: 98, smartphone_time: 30, height: 171, sleep_time: 8.0, commute_time: 50, gaming_time: 0 },  // High score, High sleep
+            { id: 8, study_time: 75, score: 70, smartphone_time: 100, height: 178, sleep_time: 7.5, commute_time: 10, gaming_time: 60 },
+            { id: 9, study_time: 45, score: 55, smartphone_time: 150, height: 166, sleep_time: 9.0, commute_time: 40, gaming_time: 120 }, // Low score, High sleep
+            { id: 10, study_time: 110, score: 82, smartphone_time: 70, height: 169, sleep_time: 6.5, commute_time: 35, gaming_time: 30 },
+            { id: 11, study_time: 130, score: 88, smartphone_time: 50, height: 173, sleep_time: 7.0, commute_time: 15, gaming_time: 20 },
+            { id: 12, study_time: 20, score: 40, smartphone_time: 200, height: 158, sleep_time: 8.0, commute_time: 55, gaming_time: 150 }, // Low score, High sleep
             { id: 13, study_time: 100, score: 75, smartphone_time: 80, height: 174, sleep_time: 6.0, commute_time: 20, gaming_time: 50 },
-            { id: 14, study_time: 50, score: 58, smartphone_time: 130, height: 167, sleep_time: 7.5, commute_time: 30, gaming_time: 100 },
-            { id: 15, study_time: 160, score: 95, smartphone_time: 40, height: 176, sleep_time: 5.0, commute_time: 45, gaming_time: 10 }, // High score, very low sleep
-            { id: 16, study_time: 80, score: 72, smartphone_time: 110, height: 162, sleep_time: 8.0, commute_time: 25, gaming_time: 70 },
-            { id: 17, study_time: 40, score: 50, smartphone_time: 160, height: 170, sleep_time: 7.0, commute_time: 60, gaming_time: 130 },
-            { id: 18, study_time: 140, score: 90, smartphone_time: 55, height: 180, sleep_time: 7.5, commute_time: 10, gaming_time: 15 },
-            { id: 19, study_time: 5, score: 25, smartphone_time: 300, height: 164, sleep_time: 9.0, commute_time: 5, gaming_time: 240 }, // Low score, very high sleep
-            { id: 20, study_time: 95, score: 76, smartphone_time: 95, height: 172, sleep_time: 6.5, commute_time: 30, gaming_time: 60 }
+            { id: 14, study_time: 50, score: 58, smartphone_time: 130, height: 167, sleep_time: 5.5, commute_time: 30, gaming_time: 100 },
+            { id: 15, study_time: 160, score: 95, smartphone_time: 40, height: 176, sleep_time: 5.5, commute_time: 45, gaming_time: 10 }, // High score, Low sleep
+            { id: 16, study_time: 80, score: 72, smartphone_time: 110, height: 162, sleep_time: 7.5, commute_time: 25, gaming_time: 70 },
+            { id: 17, study_time: 40, score: 50, smartphone_time: 160, height: 170, sleep_time: 6.5, commute_time: 60, gaming_time: 130 },
+            { id: 18, study_time: 140, score: 90, smartphone_time: 55, height: 180, sleep_time: 8.5, commute_time: 10, gaming_time: 15 }, // High score, High sleep
+            { id: 19, study_time: 5, score: 25, smartphone_time: 300, height: 164, sleep_time: 4.5, commute_time: 5, gaming_time: 240 }, // Low score, Very Low sleep
+            { id: 20, study_time: 95, score: 76, smartphone_time: 95, height: 172, sleep_time: 7.0, commute_time: 30, gaming_time: 60 }
         ]
     },
     {
@@ -123,7 +123,7 @@ export const DRILL_QUESTS = [
         initialX: "study_time",
         initialY: "height",
         targetKey: "study_time",
-        validAnswers: ["score"], // Only score is accepted
+        validAnswers: ["score"], 
         expectedStrength: "かなり強い正の相関がある",
         hint: "勉強を頑張れば頑張るほど、明確に上がる数値は？",
         causationNote: "【因果関係あり】勉強時間が増えたことが原因で、成績が上がったと考えられます。"
@@ -135,7 +135,7 @@ export const DRILL_QUESTS = [
         initialX: "smartphone_time",
         initialY: "height",
         targetKey: "smartphone_time",
-        validAnswers: ["score"], // Focusing on the "result" aspect
+        validAnswers: ["score"], 
         expectedStrength: "かなり強い負の相関がある",
         hint: "スマホ時間が増えると、逆に減ってしまう大事な結果は？",
         causationNote: "【因果関係の可能性】スマホに時間を使いすぎて勉強時間が減ったことが、成績低下の原因かもしれません。"
@@ -159,7 +159,7 @@ export const DRILL_QUESTS = [
         initialX: "temperature",
         initialY: "customers",
         targetKey: "temperature",
-        validAnswers: ["cold_drink_sales"], // Exclude icecream (food) and coffee
+        validAnswers: ["cold_drink_sales"], 
         expectedStrength: "かなり強い正の相関がある",
         hint: "暑い日に飲みたくなるのは、ホットコーヒー？それとも清涼飲料水？",
         causationNote: "【因果関係あり】気温が高いことが原因で、冷たい飲み物が売れています。"
@@ -171,7 +171,7 @@ export const DRILL_QUESTS = [
         initialX: "icecream_sales",
         initialY: "customers",
         targetKey: "icecream_sales",
-        validAnswers: ["cold_drink_sales"], // Only this shows the spurious correlation intended
+        validAnswers: ["cold_drink_sales"], 
         expectedStrength: "かなり強い正の相関がある",
         hint: "アイスが売れる暑い日は、他の冷たいものも売れているはず！",
         causationNote: "【重要：因果関係なし！】アイスが売れたからジュースが売れたわけではありません。「気温が高い」という共通の原因があるため、両方売れたのです。これを「擬似相関」と呼びます。"
@@ -183,7 +183,7 @@ export const DRILL_QUESTS = [
         initialX: "level",
         initialY: "luck",
         targetKey: "level",
-        validAnswers: ["hp", "attack"], // Both are valid
+        validAnswers: ["hp", "attack"], 
         expectedStrength: "かなり強い正の相関がある",
         hint: "レベルが上がると、キャラクターの体力はどうなる？",
         causationNote: "【因果関係あり】レベルアップという仕組みによって、HPが上昇するようにプログラムされています。"
