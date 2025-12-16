@@ -19,7 +19,7 @@ const html = htm.bind(React.createElement);
 const Card = ({ title, children, className = "" }) => html`
     <div class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col border border-gray-100 ${className}">
         ${title && html`<div class="px-4 py-3 bg-gray-50 border-b border-gray-100 font-bold text-gray-700">${title}</div>`}
-        <div class="p-4 flex-1 overflow-auto">
+        <div class="p-4 flex-1 overflow-auto flex flex-col">
             ${children}
         </div>
     </div>
@@ -840,7 +840,7 @@ const App = () => {
                                     <div class="flex items-center"><span class="w-4 h-1 md:w-8 bg-orange-500 mr-1 md:mr-2"></span>回帰直線</div>
                                 </div>
                             </div>
-                            <div class="flex-1 w-full min-h-0 relative">
+                            <div class="flex-1 w-full min-h-0 relative" style=${{ minHeight: '300px' }}>
                                 <${ScatterVis} 
                                     data=${dataset.data} 
                                     xConfig=${xColumn} 
