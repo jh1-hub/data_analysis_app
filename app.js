@@ -100,49 +100,59 @@ const DataInputModal = ({ onClose, onImport }) => {
 };
 
 /**
- * フローティングデータウィンドウ (ドラッグ可能)
+ * フローティングデータウィンドウ (ドラッグ可能・タッチ対応)
  */
 const FloatingDataWindow = ({ data, columns, excludedIds, onTogglePoint, onClose }) => {
     // 初期位置をレスポンシブに調整
     const isMobile = window.innerWidth < 768;
-    const [position, setPosition] = useState(isMobile ? { x: 10, y: 120 } : { x: 20, y: 150 });
+    const [position, setPosition] = useState(isMobile ? { x: 10, y: 100 } : { x: 20, y: 150 });
     const [isDragging, setIsDragging] = useState(false);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [isMinimized, setIsMinimized] = useState(false);
 
+    // Mouse Events
     const handleMouseDown = (e) => {
         setIsDragging(true);
-        setOffset({
-            x: e.clientX - position.x,
-            y: e.clientY - position.y
-        });
+        setOffset({ x: e.clientX - position.x, y: e.clientY - position.y });
     };
 
-    const handleMouseMove = (e) => {
-        if (!isDragging) return;
-        setPosition({
-            x: e.clientX - offset.x,
-            y: e.clientY - offset.y
-        });
-    };
-
-    const handleMouseUp = () => {
-        setIsDragging(false);
+    // Touch Events
+    const handleTouchStart = (e) => {
+        const touch = e.touches[0];
+        setIsDragging(true);
+        setOffset({ x: touch.clientX - position.x, y: touch.clientY - position.y });
     };
 
     useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            setPosition({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+        };
+        const handleMouseUp = () => setIsDragging(false);
+
+        const handleTouchMove = (e) => {
+            if (!isDragging) return;
+            // Prevent scrolling while dragging
+            if (e.cancelable) e.preventDefault();
+            const touch = e.touches[0];
+            setPosition({ x: touch.clientX - offset.x, y: touch.clientY - offset.y });
+        };
+        const handleTouchEnd = () => setIsDragging(false);
+
         if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mousemove', handleMouseMove, { passive: false });
             window.addEventListener('mouseup', handleMouseUp);
-        } else {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
+            window.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchend', handleTouchEnd);
         }
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [isDragging]);
+    }, [isDragging, offset]);
 
     return html`
         <div 
@@ -156,15 +166,16 @@ const FloatingDataWindow = ({ data, columns, excludedIds, onTogglePoint, onClose
             }}
         >
             <div 
-                class="bg-gray-800 text-white px-3 py-2 cursor-grab active:cursor-grabbing flex justify-between items-center select-none"
+                class="bg-gray-800 text-white px-3 py-2 cursor-grab active:cursor-grabbing flex justify-between items-center select-none touch-none"
                 onMouseDown=${handleMouseDown}
+                onTouchStart=${handleTouchStart}
             >
                 <span class="text-sm font-bold">データ選択・一覧 (n=${data.length})</span>
                 <div class="flex gap-2">
-                    <button onClick=${() => setIsMinimized(!isMinimized)} class="hover:text-gray-300">
+                    <button onClick=${() => setIsMinimized(!isMinimized)} class="hover:text-gray-300" onTouchEnd=${(e) => {e.stopPropagation(); setIsMinimized(!isMinimized);}}>
                         ${isMinimized ? '□' : '－'}
                     </button>
-                    <button onClick=${onClose} class="hover:text-red-300">×</button>
+                    <button onClick=${onClose} class="hover:text-red-300" onTouchEnd=${(e) => {e.stopPropagation(); onClose();}}>×</button>
                 </div>
             </div>
             ${!isMinimized && html`
@@ -205,13 +216,13 @@ const FloatingDataWindow = ({ data, columns, excludedIds, onTogglePoint, onClose
 };
 
 /**
- * ドリルクエストウィンドウ (ドラッグ可能・最小化可能)
+ * ドリルクエストウィンドウ (ドラッグ可能・最小化可能・タッチ対応)
  * 常に最前面に表示し、問題文と解説を表示
  */
 const DrillQuestWindow = ({ quest, index, total, feedback, onSubmit, onNext }) => {
     // 画面右上（スマホなら画面下部）に配置
     const isMobile = window.innerWidth < 768;
-    const [position, setPosition] = useState(isMobile ? { x: 16, y: 80 } : { x: window.innerWidth - 380, y: 80 });
+    const [position, setPosition] = useState(isMobile ? { x: 16, y: window.innerHeight - 250 } : { x: window.innerWidth - 380, y: 80 });
     const [isDragging, setIsDragging] = useState(false);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [isMinimized, setIsMinimized] = useState(false);
@@ -219,33 +230,54 @@ const DrillQuestWindow = ({ quest, index, total, feedback, onSubmit, onNext }) =
     // 状態が変化したら自動展開
     useEffect(() => {
         setIsMinimized(false);
+        // Reset position on mobile when quest changes to ensure visibility? 
+        // Optional, but keeping position persistence is usually better UX unless offscreen.
     }, [quest.id, feedback]);
 
-    // Drag handlers
+    // Mouse Handlers
     const handleMouseDown = (e) => {
-        if (e.target.closest('button')) return; // ボタン押下時はドラッグしない
+        if (e.target.closest('button')) return;
         setIsDragging(true);
         setOffset({ x: e.clientX - position.x, y: e.clientY - position.y });
     };
-    const handleMouseMove = (e) => {
-        if (!isDragging) return;
-        setPosition({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+
+    // Touch Handlers
+    const handleTouchStart = (e) => {
+        if (e.target.closest('button')) return;
+        const touch = e.touches[0];
+        setIsDragging(true);
+        setOffset({ x: touch.clientX - position.x, y: touch.clientY - position.y });
     };
-    const handleMouseUp = () => setIsDragging(false);
 
     useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            setPosition({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+        };
+        const handleMouseUp = () => setIsDragging(false);
+
+        const handleTouchMove = (e) => {
+            if (!isDragging) return;
+            if (e.cancelable) e.preventDefault();
+            const touch = e.touches[0];
+            setPosition({ x: touch.clientX - offset.x, y: touch.clientY - offset.y });
+        };
+        const handleTouchEnd = () => setIsDragging(false);
+
         if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mousemove', handleMouseMove, { passive: false });
             window.addEventListener('mouseup', handleMouseUp);
-        } else {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
+            window.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchend', handleTouchEnd);
         }
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [isDragging]);
+    }, [isDragging, offset]);
 
     const isCorrect = feedback === 'correct';
     
@@ -316,14 +348,15 @@ const DrillQuestWindow = ({ quest, index, total, feedback, onSubmit, onNext }) =
         >
             <!-- Header (Drag Handle) -->
             <div 
-                class="px-4 py-2 bg-gradient-to-r from-slate-800 to-indigo-900 text-white flex justify-between items-center cursor-grab active:cursor-grabbing select-none"
+                class="px-4 py-2 bg-gradient-to-r from-slate-800 to-indigo-900 text-white flex justify-between items-center cursor-grab active:cursor-grabbing select-none touch-none"
                 onMouseDown=${handleMouseDown}
+                onTouchStart=${handleTouchStart}
             >
                 <div class="flex items-center space-x-2">
                     <span class="text-xl">${icon}</span>
                     <span class="font-bold text-sm">MISSION ${index + 1}/${total}</span>
                 </div>
-                <button onClick=${() => setIsMinimized(!isMinimized)} class="p-1 hover:bg-white/20 rounded">
+                <button onClick=${() => setIsMinimized(!isMinimized)} class="p-1 hover:bg-white/20 rounded" onTouchEnd=${(e) => {e.stopPropagation(); setIsMinimized(!isMinimized);}}>
                     ${isMinimized ? '□' : '－'}
                 </button>
             </div>
