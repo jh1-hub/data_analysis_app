@@ -562,17 +562,24 @@ const AnalysisPanel = ({ xLabel, yLabel, correlation, regression, strength, acti
  * ドリルクリア時のモーダル
  */
 const DrillClearModal = ({ onRestart }) => html`
-    <div class="fixed inset-0 bg-black bg-opacity-70 z-[200] flex items-center justify-center p-4 backdrop-blur-md">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center animate-pop-in relative overflow-hidden border-4 border-yellow-400">
-            <div class="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 bg-yellow-100">
-                <div class="w-full h-full" style="background-image: radial-gradient(#fbbf24 2px, transparent 2px); background-size: 20px 20px;"></div>
-            </div>
+    <div class="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in-up">
+        <div class="bg-white/90 rounded-3xl shadow-2xl p-8 max-w-lg w-full text-center relative overflow-hidden border-4 border-yellow-400 ring-4 ring-yellow-200/50">
+            <!-- 背景装飾 -->
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-yellow-400 via-orange-300 to-transparent"></div>
+            
             <div class="relative z-10">
-                <div class="text-6xl mb-4 animate-bounce-slow">🏆</div>
-                <h2 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500 mb-2">MISSION COMPLETE!</h2>
-                <p class="text-gray-600 mb-8 font-bold text-lg">全ミッション達成！<br/>君は立派なデータ探偵だ！</p>
+                <div class="text-7xl mb-4 animate-bounce-slow drop-shadow-md">🎊</div>
+                <h2 class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 mb-2 filter drop-shadow-sm">
+                    CONGRATULATIONS!
+                </h2>
+                <div class="w-24 h-1 bg-gradient-to-r from-yellow-400 to-orange-500 mx-auto mb-6 rounded-full"></div>
                 
-                <button onClick=${onRestart} class="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transform transition hover:-translate-y-1 text-lg">
+                <p class="text-gray-700 mb-8 font-bold text-lg leading-relaxed">
+                    全ミッション達成おめでとう！<br/>
+                    君はもう立派なデータマスターだ！
+                </p>
+                
+                <button onClick=${onRestart} class="w-full py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-2xl font-bold shadow-xl hover:shadow-2xl hover:scale-[1.02] transform transition-all text-xl border-t border-white/20">
                     最初から遊ぶ
                 </button>
             </div>
@@ -605,6 +612,7 @@ const App = () => {
     const [currentQuestIndex, setCurrentQuestIndex] = useState(0);
     const [drillFeedback, setDrillFeedback] = useState(null); // null | 'correct' | 'incorrect' | 'same_variable' | 'spurious'
     const [showClearModal, setShowClearModal] = useState(false);
+    const [hasCleared, setHasCleared] = useState(false);
 
     // Derived Data
     const dataset = useMemo(() => 
@@ -771,6 +779,7 @@ const App = () => {
             setCurrentQuestIndex(prev => prev + 1);
         } else {
             // End of drills
+            setHasCleared(true);
             setShowClearModal(true);
         }
     };
@@ -780,6 +789,7 @@ const App = () => {
         setCurrentQuestIndex(0);
         setDrillFeedback(null);
         setMode('drill');
+        // hasCleared remains true to keep the celebratory background
     };
 
     // Safety check to ensure keys are valid when dataset manually changed (Exploration mode mostly)
@@ -794,10 +804,14 @@ const App = () => {
     const displayQuestIndex = Math.min(currentQuestIndex, DRILL_QUESTS.length - 1);
     const currentQuest = DRILL_QUESTS[displayQuestIndex];
 
+    const bgClass = hasCleared 
+        ? "bg-gradient-to-br from-yellow-50 via-orange-50 to-pink-50" 
+        : "bg-gray-50";
+
     return html`
-        <div class="h-full flex flex-col bg-gray-50 font-sans">
+        <div class="h-full flex flex-col font-sans ${bgClass} transition-colors duration-1000">
             <!-- Header -->
-            <header class="bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row justify-between items-center shadow-sm z-10 gap-3">
+            <header class="bg-white/80 backdrop-blur border-b border-gray-200 px-4 py-3 md:px-6 md:py-4 flex flex-col md:flex-row justify-between items-center shadow-sm z-10 gap-3">
                 <div class="flex items-center space-x-3 md:space-x-4 w-full md:w-auto">
                     <div class="bg-gradient-to-br from-indigo-500 to-purple-600 text-white p-2 rounded-lg flex-shrink-0 shadow-md">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -954,7 +968,7 @@ const App = () => {
             </main>
 
             <!-- Drill Quest Window (Floating Assistant) -->
-            ${mode === 'drill' && html`
+            ${mode === 'drill' && !showClearModal && html`
                 <${DrillQuestWindow}
                     quest=${currentQuest}
                     index=${displayQuestIndex}
