@@ -326,12 +326,12 @@ const TutorialMode = ({ onFinish }) => {
                 </div>
 
                 <!-- Content Area -->
-                <div class="flex-1 p-4 md:p-10 overflow-y-auto bg-gray-50/50 relative overscroll-contain">
+                <div class="flex-1 p-4 md:p-10 pb-20 overflow-y-auto bg-gray-50/50 relative overscroll-contain">
                     ${current.content}
                 </div>
 
                 <!-- Footer / Controls -->
-                <div class="bg-white border-t border-gray-100 p-3 md:p-4 flex justify-between items-center shrink-0">
+                <div class="bg-white border-t border-gray-100 p-3 md:p-4 pb-8 md:pb-4 flex justify-between items-center shrink-0">
                     <button 
                         onClick=${() => setStep(Math.max(0, step - 1))}
                         disabled=${step === 0}
