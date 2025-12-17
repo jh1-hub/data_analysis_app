@@ -11,15 +11,15 @@
         window.process = { env: { NODE_ENV: 'production' } };
     </script>
 
-    <!-- Import Map for consistent dependency resolution -->
+    <!-- Import Map for consistent dependency resolution (React 19) -->
     <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "htm": "https://esm.sh/htm@3.1.1",
-    "recharts": "https://esm.sh/recharts@2.13.0?deps=react@18.2.0,react-dom@18.2.0",
+    "recharts": "https://esm.sh/recharts@2.13.0?deps=react@19.0.0,react-dom@19.0.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
   }
 }
@@ -46,10 +46,10 @@
     <link rel="stylesheet" href="./styles.css">
 
     <!-- Preload critical modules -->
-    <link rel="modulepreload" href="https://esm.sh/react@18.2.0">
-    <link rel="modulepreload" href="https://esm.sh/react-dom@18.2.0/client">
+    <link rel="modulepreload" href="https://esm.sh/react@19.0.0">
+    <link rel="modulepreload" href="https://esm.sh/react-dom@19.0.0/client">
     <link rel="modulepreload" href="https://esm.sh/htm@3.1.1">
-    <link rel="modulepreload" href="https://esm.sh/recharts@2.13.0?deps=react@18.2.0,react-dom@18.2.0">
+    <link rel="modulepreload" href="https://esm.sh/recharts@2.13.0?deps=react@19.0.0,react-dom@19.0.0">
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
     <div id="root" class="h-full flex flex-col w-full"></div>
