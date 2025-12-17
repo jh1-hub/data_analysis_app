@@ -102,7 +102,7 @@ const TutorialMode = ({ onFinish }) => {
         {
             title: "はじめに：散布図（さんぷず）ってなに？",
             content: html`
-                <div class="flex flex-col items-center justify-center h-full text-center space-y-6 animate-fade-in-up">
+                <div class="flex flex-col items-center justify-center min-h-full text-center space-y-6 animate-fade-in-up py-4">
                     <div class="text-6xl">📊</div>
                     <p class="text-xl text-gray-700 leading-relaxed max-w-2xl">
                         「気温が上がると、アイスが売れる」<br/>
@@ -116,7 +116,7 @@ const TutorialMode = ({ onFinish }) => {
         {
             title: "ステップ1：表からグラフを作ってみよう",
             content: html`
-                <div class="flex flex-col lg:flex-row gap-8 h-full items-center justify-center animate-fade-in-up">
+                <div class="flex flex-col lg:flex-row gap-8 min-h-full items-center justify-center animate-fade-in-up py-4">
                     <!-- Table -->
                     <div class="w-full lg:w-1/3 bg-white p-4 rounded-lg shadow border border-gray-200">
                         <h4 class="font-bold text-center mb-2 text-gray-600">あるお店のアイス売上</h4>
@@ -191,7 +191,7 @@ const TutorialMode = ({ onFinish }) => {
         {
             title: "ステップ2：形から関係を読み解く",
             content: html`
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-full items-center animate-fade-in-up">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-full items-center animate-fade-in-up py-4">
                     <div class="bg-red-50 p-4 rounded-xl border border-red-100 flex flex-col items-center text-center h-full">
                         <div class="h-32 w-full flex items-center justify-center mb-2">
                             <svg viewBox="0 0 100 80" class="w-3/4 overflow-visible">
@@ -254,7 +254,7 @@ const TutorialMode = ({ onFinish }) => {
         {
             title: "ステップ3：相関の「強さ」と相関係数(r)",
             content: html`
-                <div class="flex flex-col items-center justify-center h-full space-y-8 animate-fade-in-up">
+                <div class="flex flex-col items-center justify-center min-h-full space-y-8 animate-fade-in-up py-4">
                     <div class="w-full max-w-3xl">
                         <div class="flex justify-between text-sm text-gray-500 font-mono mb-2">
                             <span>-1.0 (完全な負)</span>
@@ -291,7 +291,7 @@ const TutorialMode = ({ onFinish }) => {
         {
             title: "準備完了！",
             content: html`
-                <div class="flex flex-col items-center justify-center h-full text-center space-y-8 animate-fade-in-up">
+                <div class="flex flex-col items-center justify-center min-h-full text-center space-y-8 animate-fade-in-up py-4">
                     <div class="text-8xl animate-bounce-slow">🎓</div>
                     <h2 class="text-3xl font-bold text-gray-800">マスターしましたね！</h2>
                     <p class="text-lg text-gray-600">
@@ -312,44 +312,44 @@ const TutorialMode = ({ onFinish }) => {
     const current = pages[step];
 
     return html`
-        <div class="flex-1 flex flex-col p-4 md:p-8 max-w-5xl mx-auto w-full h-full overflow-hidden">
-            <div class="bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col h-full overflow-hidden">
+        <div class="flex-1 flex flex-col min-h-0 p-2 md:p-8 max-w-5xl mx-auto w-full">
+            <div class="bg-white rounded-xl md:rounded-2xl shadow-xl border border-gray-200 flex flex-col h-full overflow-hidden">
                 <!-- Tutorial Header -->
-                <div class="bg-indigo-600 text-white px-6 py-4 flex justify-between items-center">
-                    <h2 class="text-xl font-bold flex items-center">
-                        <span class="bg-white text-indigo-600 rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm font-black">${step + 1}</span>
+                <div class="bg-indigo-600 text-white px-4 py-3 md:px-6 md:py-4 flex justify-between items-center shrink-0">
+                    <h2 class="text-lg md:text-xl font-bold flex items-center">
+                        <span class="bg-white text-indigo-600 rounded-full w-6 h-6 md:w-8 md:h-8 flex items-center justify-center mr-2 md:mr-3 text-xs md:text-sm font-black">${step + 1}</span>
                         ${current.title}
                     </h2>
-                    <div class="text-sm opacity-80">
+                    <div class="text-xs md:text-sm opacity-80 whitespace-nowrap ml-2">
                         ${step + 1} / ${pages.length}
                     </div>
                 </div>
 
                 <!-- Content Area -->
-                <div class="flex-1 p-6 md:p-10 overflow-y-auto bg-gray-50/50 relative">
+                <div class="flex-1 p-4 md:p-10 overflow-y-auto bg-gray-50/50 relative overscroll-contain">
                     ${current.content}
                 </div>
 
                 <!-- Footer / Controls -->
-                <div class="bg-white border-t border-gray-100 p-4 flex justify-between items-center">
+                <div class="bg-white border-t border-gray-100 p-3 md:p-4 flex justify-between items-center shrink-0">
                     <button 
                         onClick=${() => setStep(Math.max(0, step - 1))}
                         disabled=${step === 0}
-                        class="px-6 py-2 rounded-lg font-bold text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        class="px-4 py-2 md:px-6 rounded-lg font-bold text-gray-600 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm md:text-base"
                     >
                         ← 前へ
                     </button>
                     
-                    <div class="flex space-x-2">
+                    <div class="flex space-x-1 md:space-x-2">
                         ${pages.map((_, i) => html`
-                            <div class="w-2 h-2 rounded-full transition-all ${i === step ? 'bg-indigo-600 w-4' : 'bg-gray-300'}"></div>
+                            <div class="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all ${i === step ? 'bg-indigo-600 w-3 md:w-4' : 'bg-gray-300'}"></div>
                         `)}
                     </div>
 
                     <button 
                         onClick=${() => setStep(Math.min(pages.length - 1, step + 1))}
                         disabled=${step === pages.length - 1}
-                        class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow disabled:opacity-0 disabled:pointer-events-none transition-all"
+                        class="px-4 py-2 md:px-6 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow disabled:opacity-0 disabled:pointer-events-none transition-all text-sm md:text-base"
                     >
                         次へ →
                     </button>
