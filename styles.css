@@ -76,3 +76,46 @@
     0%, 100% { opacity: 1; }
     50% { opacity: .5; }
 }
+
+/* Tutorial Plot Animations */
+@keyframes growY {
+    from { transform: scaleY(0); opacity: 0; }
+    to { transform: scaleY(1); opacity: 0.5; }
+}
+@keyframes growX {
+    from { transform: scaleX(0); opacity: 0; }
+    to { transform: scaleX(1); opacity: 0.5; }
+}
+@keyframes popPoint {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.4); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-grow-y {
+    transform-origin: bottom;
+    animation: growY 0.4s ease-out forwards;
+}
+.animate-grow-x {
+    transform-origin: left;
+    animation: growX 0.4s ease-out 0.4s forwards; /* delay */
+    opacity: 0;
+}
+.animate-pop-point {
+    transform-origin: center;
+    animation: popPoint 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.8s forwards; /* delay */
+    opacity: 0;
+}
+.animate-show-text {
+    animation: fadeInUp 0.3s ease-out 1.0s forwards;
+    opacity: 0;
+}
+
+/* Correlation Floating Animation */
+@keyframes float {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(0, -3px); }
+}
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}

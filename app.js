@@ -103,7 +103,7 @@ const TutorialMode = ({ onFinish }) => {
             title: "はじめに：散布図（さんぷず）ってなに？",
             content: html`
                 <div class="flex flex-col items-center justify-center min-h-full text-center space-y-6 animate-fade-in-up py-4">
-                    <div class="text-6xl">📊</div>
+                    <div class="text-6xl animate-bounce-slow">📊</div>
                     <p class="text-xl text-gray-700 leading-relaxed max-w-2xl">
                         「気温が上がると、アイスが売れる」<br/>
                         「勉強時間を増やすと、テストの点数が上がる」<br/><br/>
@@ -166,16 +166,23 @@ const TutorialMode = ({ onFinish }) => {
                                 const y = 250 - (d.sales / 500) * 230;
                                 const isVisible = plotStep > i;
                                 
+                                if (!isVisible) return null;
+
                                 return html`
-                                    <g class="transition-opacity duration-700 ${isVisible ? 'opacity-100' : 'opacity-0'}">
-                                        <!-- Guide Lines -->
-                                        <line x1="${x}" y1="250" x2="${x}" y2="${y}" stroke="#3b82f6" stroke-dasharray="4" stroke-opacity="0.5" />
-                                        <line x1="50" y1="${y}" x2="${x}" y2="${y}" stroke="#10b981" stroke-dasharray="4" stroke-opacity="0.5" />
-                                        <!-- Point -->
-                                        <circle cx="${x}" cy="${y}" r="6" fill="#6366f1" stroke="white" stroke-width="2" />
+                                    <g key=${i}>
+                                        <!-- Guide Lines (Animated) -->
+                                        <!-- Y-direction line (from X axis up) -->
+                                        <line x1="${x}" y1="250" x2="${x}" y2="${y}" stroke="#3b82f6" stroke-dasharray="4" class="animate-grow-y" />
+                                        
+                                        <!-- X-direction line (from Y axis right) -->
+                                        <line x1="50" y1="${y}" x2="${x}" y2="${y}" stroke="#10b981" stroke-dasharray="4" class="animate-grow-x" />
+                                        
+                                        <!-- Point (Popping) -->
+                                        <circle cx="${x}" cy="${y}" r="6" fill="#6366f1" stroke="white" stroke-width="2" class="animate-pop-point" />
+                                        
                                         <!-- Values -->
-                                        <text x="${x}" y="265" text-anchor="middle" font-size="10" fill="#3b82f6">${d.temp}</text>
-                                        <text x="35" y="${y+4}" text-anchor="end" font-size="10" fill="#10b981">${d.sales}</text>
+                                        <text x="${x}" y="265" text-anchor="middle" font-size="10" fill="#3b82f6" class="animate-show-text">${d.temp}</text>
+                                        <text x="35" y="${y+4}" text-anchor="end" font-size="10" fill="#10b981" class="animate-show-text">${d.sales}</text>
                                     </g>
                                 `;
                             })}
@@ -183,8 +190,8 @@ const TutorialMode = ({ onFinish }) => {
                     </div>
                 </div>
                 <p class="text-center mt-4 text-gray-600">
-                    表の「横（X）」と「縦（Y）」の数値がぶつかる場所に、点を打っていきます。<br/>
-                    これを繰り返すと、データの「形」が見えてきます。
+                    ボタンを押すと、表のデータがグラフに変わります。<br/>
+                    <span class="text-indigo-600 font-bold">X（横）</span>と<span class="text-green-600 font-bold">Y（縦）</span>がぶつかる場所に点が打たれます。
                 </p>
             `
         },
@@ -192,17 +199,18 @@ const TutorialMode = ({ onFinish }) => {
             title: "ステップ2：形から関係を読み解く",
             content: html`
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 min-h-full items-center animate-fade-in-up py-4">
-                    <div class="bg-red-50 p-4 rounded-xl border border-red-100 flex flex-col items-center text-center h-full">
+                    <!-- Positive Correlation -->
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-100 flex flex-col items-center text-center h-full hover:shadow-lg transition-shadow">
                         <div class="h-32 w-full flex items-center justify-center mb-2">
                             <svg viewBox="0 0 100 80" class="w-3/4 overflow-visible">
                                 <line x1="10" y1="70" x2="90" y2="70" stroke="#666" stroke-width="1"/>
                                 <line x1="10" y1="70" x2="10" y2="10" stroke="#666" stroke-width="1"/>
-                                <line x1="15" y1="65" x2="85" y2="15" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>
-                                <circle cx="20" cy="60" r="2" fill="#ef4444" />
-                                <circle cx="35" cy="50" r="2" fill="#ef4444" />
-                                <circle cx="50" cy="40" r="2" fill="#ef4444" />
-                                <circle cx="65" cy="30" r="2" fill="#ef4444" />
-                                <circle cx="80" cy="20" r="2" fill="#ef4444" />
+                                <line x1="15" y1="65" x2="85" y2="15" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-dasharray="2" opacity="0.3"/>
+                                ${[
+                                    {x:20, y:60}, {x:35, y:50}, {x:50, y:40}, {x:65, y:30}, {x:80, y:20}
+                                ].map((p, i) => html`
+                                    <circle cx=${p.x} cy=${p.y} r="2" fill="#ef4444" class="animate-float" style=${{animationDelay: `${i * 0.5}s`}} />
+                                `)}
                             </svg>
                         </div>
                         <h4 class="font-bold text-red-700 text-lg mb-2">正の相関</h4>
@@ -211,17 +219,18 @@ const TutorialMode = ({ onFinish }) => {
                         <p class="text-xs font-bold text-red-600 mt-1">例：勉強時間と成績</p>
                     </div>
 
-                    <div class="bg-green-50 p-4 rounded-xl border border-green-100 flex flex-col items-center text-center h-full">
+                    <!-- Negative Correlation -->
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-100 flex flex-col items-center text-center h-full hover:shadow-lg transition-shadow">
                         <div class="h-32 w-full flex items-center justify-center mb-2">
                             <svg viewBox="0 0 100 80" class="w-3/4 overflow-visible">
                                 <line x1="10" y1="70" x2="90" y2="70" stroke="#666" stroke-width="1"/>
                                 <line x1="10" y1="70" x2="10" y2="10" stroke="#666" stroke-width="1"/>
-                                <line x1="15" y1="15" x2="85" y2="65" stroke="#10b981" stroke-width="2" stroke-linecap="round"/>
-                                <circle cx="20" cy="20" r="2" fill="#10b981" />
-                                <circle cx="35" cy="30" r="2" fill="#10b981" />
-                                <circle cx="50" cy="40" r="2" fill="#10b981" />
-                                <circle cx="65" cy="50" r="2" fill="#10b981" />
-                                <circle cx="80" cy="60" r="2" fill="#10b981" />
+                                <line x1="15" y1="15" x2="85" y2="65" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-dasharray="2" opacity="0.3"/>
+                                ${[
+                                    {x:20, y:20}, {x:35, y:30}, {x:50, y:40}, {x:65, y:50}, {x:80, y:60}
+                                ].map((p, i) => html`
+                                    <circle cx=${p.x} cy=${p.y} r="2" fill="#10b981" class="animate-float" style=${{animationDelay: `${i * 0.5}s`}} />
+                                `)}
                             </svg>
                         </div>
                         <h4 class="font-bold text-green-700 text-lg mb-2">負の相関</h4>
@@ -230,17 +239,17 @@ const TutorialMode = ({ onFinish }) => {
                         <p class="text-xs font-bold text-green-600 mt-1">例：スマホ時間と成績</p>
                     </div>
 
-                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col items-center text-center h-full">
+                    <!-- No Correlation -->
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col items-center text-center h-full hover:shadow-lg transition-shadow">
                         <div class="h-32 w-full flex items-center justify-center mb-2">
                             <svg viewBox="0 0 100 80" class="w-3/4 overflow-visible">
                                 <line x1="10" y1="70" x2="90" y2="70" stroke="#666" stroke-width="1"/>
                                 <line x1="10" y1="70" x2="10" y2="10" stroke="#666" stroke-width="1"/>
-                                <circle cx="20" cy="50" r="2" fill="#666" />
-                                <circle cx="30" cy="20" r="2" fill="#666" />
-                                <circle cx="50" cy="60" r="2" fill="#666" />
-                                <circle cx="70" cy="30" r="2" fill="#666" />
-                                <circle cx="80" cy="65" r="2" fill="#666" />
-                                <circle cx="40" cy="40" r="2" fill="#666" />
+                                ${[
+                                    {x:20, y:50}, {x:30, y:20}, {x:50, y:60}, {x:70, y:30}, {x:80, y:65}, {x:40, y:40}
+                                ].map((p, i) => html`
+                                    <circle cx=${p.x} cy=${p.y} r="2" fill="#666" class="animate-float" style=${{animationDelay: `${Math.random()}s`}} />
+                                `)}
                             </svg>
                         </div>
                         <h4 class="font-bold text-gray-700 text-lg mb-2">相関なし</h4>
@@ -868,7 +877,7 @@ const DrillClearModal = ({ onRestart }) => html`
 
 const App = () => {
     // State: Mode - 初期値を 'drill' に変更, 'explanation' 追加
-    const [mode, setMode] = useState('drill'); // 'exploration' | 'drill' | 'explanation'
+    const [mode, setMode] = useState('explanation'); // 'exploration' | 'drill' | 'explanation'
     
     // State: Datasets (Start with presets, allow adding more)
     const [availableDatasets, setAvailableDatasets] = useState(DATASETS);
