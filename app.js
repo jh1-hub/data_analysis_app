@@ -318,6 +318,27 @@ const ScatterVis = ({ data, xConfig, yConfig, regression, excludedIds, onToggleP
 };
 
 /**
+ * ビジュアルメーター
+ */
+const CorrelationMeter = ({ r }) => {
+    // -1 to 1 mapped to 0% to 100%
+    const percentage = ((r + 1) / 2) * 100;
+    
+    return html`
+        <div class="mt-3">
+            <div class="relative h-4 w-full rounded-full bg-gradient-to-r from-green-400 via-gray-300 to-red-400 shadow-inner">
+                <div class="absolute top-0 bottom-0 w-1 bg-black border border-white shadow transform -translate-x-1/2 transition-all duration-500" style=${{ left: `${percentage}%` }}></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-gray-500 mt-1 font-mono">
+                <span>-1.0 (負)</span>
+                <span>0 (無)</span>
+                <span>+1.0 (正)</span>
+            </div>
+        </div>
+    `;
+};
+
+/**
  * 分析パネル
  */
 const AnalysisPanel = ({ xLabel, yLabel, correlation, regression, strength, activeCount, totalCount }) => {
@@ -338,7 +359,10 @@ const AnalysisPanel = ({ xLabel, yLabel, correlation, regression, strength, acti
                         <span class="text-gray-600 font-medium">相関係数 (r)</span>
                         <span class="text-2xl font-bold text-blue-700">${correlation.toFixed(3)}</span>
                     </div>
-                    <div class="text-right flex justify-between items-center">
+                    
+                    <${CorrelationMeter} r=${correlation} />
+
+                    <div class="text-right flex justify-between items-center mt-2">
                         <span class="text-xs text-gray-500">n = ${activeCount} / ${totalCount}</span>
                         <span class="inline-block px-2 py-1 text-xs font-semibold rounded-full 
                             ${strength.includes('かなり強い') ? 'bg-purple-100 text-purple-800' : 
@@ -602,17 +626,22 @@ const App = () => {
         if (isCorrectPair) {
              setDrillFeedback('correct');
         } else {
-             // Check if it's a "Spurious Correlation" (Accidentally high or Spurious)
-             // Logic: If the strength matches (or is stronger/similar direction) but it's not the right answer.
-             // Here we just check if it matches the expected text description roughly.
              const currentStrength = stats.strength;
-             const isStrengthMatch = currentStrength === quest.expectedStrength || 
-                                     (quest.expectedStrength === "かなり強い正の相関がある" && currentStrength.includes("正の相関")) ||
-                                     (quest.expectedStrength === "かなり強い負の相関がある" && currentStrength.includes("負の相関")) || 
-                                     (currentStrength === quest.expectedStrength);
+             const r = stats.correlation;
 
-             if (isStrengthMatch) {
+             // Improved feedback logic
+             const isStrengthMatch = currentStrength === quest.expectedStrength || 
+                                     (quest.expectedStrength.includes("正の相関") && currentStrength.includes("正の相関")) ||
+                                     (quest.expectedStrength.includes("負の相関") && currentStrength.includes("負の相関"));
+             
+             // Check if user found "No Correlation" when asking for something else
+             const isNoCorrelation = Math.abs(r) < 0.2;
+             const askingForNoCorrelation = quest.expectedStrength.includes("ほとんど相関がない") || quest.expectedStrength.includes("無相関");
+
+             if (isStrengthMatch && !isCorrectPair && !isNoCorrelation) {
                  setDrillFeedback('spurious');
+             } else if (isNoCorrelation && !askingForNoCorrelation) {
+                 setDrillFeedback('found_no_correlation'); // New feedback state
              } else {
                  setDrillFeedback('incorrect');
              }
@@ -688,7 +717,7 @@ const App = () => {
                         <!-- Character & Dialogue -->
                         <div class="flex-shrink-0 flex items-start gap-4 md:w-2/3">
                             <div class="text-4xl md:text-5xl bg-white/10 rounded-full p-2 border-2 border-white/20 shadow-inner">
-                                ${drillFeedback === 'incorrect' || drillFeedback === 'same_variable' || drillFeedback === 'spurious' ? '🤔' : drillFeedback === 'correct' ? '😎' : '🧐'}
+                                ${drillFeedback === 'incorrect' || drillFeedback === 'same_variable' || drillFeedback === 'spurious' || drillFeedback === 'found_no_correlation' ? '🤔' : drillFeedback === 'correct' ? '😎' : '🧐'}
                             </div>
                             <div>
                                 <div class="flex items-center gap-3 mb-1">
@@ -718,6 +747,10 @@ const App = () => {
                                 ` : drillFeedback === 'spurious' ? html`
                                     <div class="text-pink-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
                                         ⚠ 確かに相関はありそうだね！でも、ミッションの意図と合うかな？<br/>「因果関係」や「設問の文章」をもう一度よく読んでみよう！
+                                    </div>
+                                ` : drillFeedback === 'found_no_correlation' ? html`
+                                    <div class="text-gray-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
+                                        ⚠ ん？ そのデータはバラバラで「相関がない」みたいだぞ。
                                     </div>
                                 ` : html`
                                     <p class="text-sm text-gray-300">

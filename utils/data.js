@@ -199,5 +199,17 @@ export const DRILL_QUESTS = [
         expectedStrength: "正の相関がある",
         hint: "雨が降れば降るほど、必要になって売れるものは？",
         causationNote: "【因果関係あり】雨が降ったことが原因で、傘を必要とする人が増えました。"
+    },
+    {
+        id: 8,
+        text: "「テスト点数」と「ほとんど相関がない（関係がない）」項目はどれ？",
+        datasetId: "students",
+        initialX: "score",
+        initialY: "study_time",
+        targetKey: "score",
+        validAnswers: ["height", "commute_time"],
+        expectedStrength: "ほとんど相関がない",
+        hint: "背の高さや通学時間で、テストの点数は決まるかな？",
+        causationNote: "【相関なし】身長や通学時間と、学力には直接的な関係は見られません。このように散布図がバラバラになり、傾向が見られない状態を「無相関」と呼びます。"
     }
 ];
