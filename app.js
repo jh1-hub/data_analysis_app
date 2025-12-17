@@ -100,12 +100,12 @@ const DataInputModal = ({ onClose, onImport }) => {
 };
 
 /**
- * フローティングデータウィンドウ
+ * フローティングデータウィンドウ (ドラッグ可能)
  */
 const FloatingDataWindow = ({ data, columns, excludedIds, onTogglePoint, onClose }) => {
     // 初期位置をレスポンシブに調整
     const isMobile = window.innerWidth < 768;
-    const [position, setPosition] = useState(isMobile ? { x: 10, y: 60 } : { x: 20, y: 100 });
+    const [position, setPosition] = useState(isMobile ? { x: 10, y: 120 } : { x: 20, y: 150 });
     const [isDragging, setIsDragging] = useState(false);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [isMinimized, setIsMinimized] = useState(false);
@@ -146,7 +146,7 @@ const FloatingDataWindow = ({ data, columns, excludedIds, onTogglePoint, onClose
 
     return html`
         <div 
-            class="fixed bg-white shadow-2xl rounded-lg border border-gray-200 z-50 flex flex-col overflow-hidden max-w-[95vw]"
+            class="fixed bg-white shadow-2xl rounded-lg border border-gray-200 z-[80] flex flex-col overflow-hidden max-w-[95vw]"
             style=${{ 
                 top: position.y, 
                 left: position.x, 
@@ -203,6 +203,148 @@ const FloatingDataWindow = ({ data, columns, excludedIds, onTogglePoint, onClose
         </div>
     `;
 };
+
+/**
+ * ドリルクエストウィンドウ (ドラッグ可能・最小化可能)
+ * 常に最前面に表示し、問題文と解説を表示
+ */
+const DrillQuestWindow = ({ quest, index, total, feedback, onSubmit, onNext }) => {
+    // 画面右上（スマホなら画面下部）に配置
+    const isMobile = window.innerWidth < 768;
+    const [position, setPosition] = useState(isMobile ? { x: 16, y: 80 } : { x: window.innerWidth - 380, y: 80 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const [isMinimized, setIsMinimized] = useState(false);
+    
+    // 状態が変化したら自動展開
+    useEffect(() => {
+        setIsMinimized(false);
+    }, [quest.id, feedback]);
+
+    // Drag handlers
+    const handleMouseDown = (e) => {
+        if (e.target.closest('button')) return; // ボタン押下時はドラッグしない
+        setIsDragging(true);
+        setOffset({ x: e.clientX - position.x, y: e.clientY - position.y });
+    };
+    const handleMouseMove = (e) => {
+        if (!isDragging) return;
+        setPosition({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+    };
+    const handleMouseUp = () => setIsDragging(false);
+
+    useEffect(() => {
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        } else {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging]);
+
+    const isCorrect = feedback === 'correct';
+    
+    // Determine Feedback Content
+    let feedbackContent = null;
+    let icon = "🧐";
+    let statusClass = "bg-gray-100 border-l-4 border-gray-400";
+    
+    if (isCorrect) {
+        icon = "🎉";
+        statusClass = "bg-green-50 border-l-4 border-green-500";
+        feedbackContent = html`
+            <div class="space-y-3">
+                <div class="font-bold text-green-700 text-lg">EXCELLENT!</div>
+                <div class="bg-white p-3 rounded border border-green-200 text-sm text-gray-700 leading-relaxed shadow-sm">
+                    <div class="font-bold text-green-800 mb-1 flex items-center"><span class="mr-1">💡</span>探偵メモ</div>
+                    ${quest.causationNote}
+                </div>
+                <button onClick=${onNext} class="w-full py-3 bg-green-500 text-white font-bold rounded shadow hover:bg-green-600 transition-transform active:scale-95 flex justify-center items-center">
+                    <span>次のミッションへ</span> <span class="ml-2">➡</span>
+                </button>
+            </div>
+        `;
+    } else if (feedback) {
+        icon = "🤔";
+        // Error / Hint states
+        let message = "";
+        let color = "orange";
+        
+        if (feedback === 'incorrect') { message = `ヒント: ${quest.hint}`; color="orange"; }
+        else if (feedback === 'incorrect_dataset') { message = "まずはデータソース設定で、対象のデータセットに切り替えよう！"; color="red"; }
+        else if (feedback === 'same_variable') { message = "同じ項目同士だと相関が1.0になってしまうよ。別の項目を選ぼう。"; color="yellow"; }
+        else if (feedback === 'spurious') { message = "相関はあるけど…ミッションの意図と合うかな？因果関係を考えてみよう！"; color="pink"; }
+        else if (feedback === 'found_no_correlation') { message = "ん？ そのデータはバラバラで「相関がない」みたいだぞ。"; color="gray"; }
+
+        statusClass = `bg-${color}-50 border-l-4 border-${color}-400`;
+        feedbackContent = html`
+            <div class="space-y-2">
+                <div class="text-${color}-800 font-bold flex items-start">
+                    <span class="mr-2 text-xl">⚠</span>
+                    <span class="text-sm mt-0.5">${message}</span>
+                </div>
+                <button onClick=${onSubmit} class="w-full py-2 bg-indigo-600 text-white font-bold rounded shadow hover:bg-indigo-700 transition-colors">
+                    再調査する
+                </button>
+            </div>
+        `;
+    } else {
+        // Initial State
+        feedbackContent = html`
+            <button onClick=${onSubmit} class="w-full py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white font-bold rounded shadow-md hover:from-orange-600 hover:to-red-600 transition-transform active:scale-95 flex items-center justify-center">
+                <span>調査報告をする</span>
+                <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+        `;
+    }
+
+    return html`
+        <div 
+            class="fixed z-[90] bg-white shadow-xl rounded-xl overflow-hidden border-2 transition-all duration-300
+                   ${isCorrect ? 'border-green-400 ring-4 ring-green-100' : 'border-indigo-100'}"
+            style=${{ 
+                top: position.y, 
+                left: position.x,
+                width: isMinimized ? '200px' : (isMobile ? 'calc(100vw - 32px)' : '350px'),
+                maxHeight: '80vh'
+            }}
+        >
+            <!-- Header (Drag Handle) -->
+            <div 
+                class="px-4 py-2 bg-gradient-to-r from-slate-800 to-indigo-900 text-white flex justify-between items-center cursor-grab active:cursor-grabbing select-none"
+                onMouseDown=${handleMouseDown}
+            >
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">${icon}</span>
+                    <span class="font-bold text-sm">MISSION ${index + 1}/${total}</span>
+                </div>
+                <button onClick=${() => setIsMinimized(!isMinimized)} class="p-1 hover:bg-white/20 rounded">
+                    ${isMinimized ? '□' : '－'}
+                </button>
+            </div>
+
+            <!-- Body -->
+            ${!isMinimized && html`
+                <div class="p-4 flex flex-col gap-4 overflow-y-auto max-h-[60vh]">
+                    <!-- Question Text -->
+                    <div class="text-gray-800 font-bold text-base leading-snug">
+                        ${quest.text}
+                    </div>
+                    
+                    <!-- Feedback Area -->
+                    <div class="rounded-lg p-3 ${statusClass} transition-colors duration-300">
+                        ${feedbackContent}
+                    </div>
+                </div>
+            `}
+        </div>
+    `;
+}
 
 /**
  * 散布図コンポーネント
@@ -430,35 +572,6 @@ const DrillClearModal = ({ onRestart }) => html`
                     最初から遊ぶ
                 </button>
             </div>
-        </div>
-    </div>
-`;
-
-/**
- * 正解時のオーバーレイ (Updated with Causation Note)
- */
-const CorrectOverlay = ({ onNext, causationNote }) => html`
-    <div class="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
-        <div class="bg-white/95 border-4 border-green-500 shadow-2xl rounded-2xl p-8 flex flex-col items-center pointer-events-auto animate-pop-in max-w-lg mx-4">
-            <div class="text-6xl mb-2">🎉</div>
-            <h3 class="text-2xl font-bold text-green-600 mb-2">EXCELLENT!</h3>
-            <p class="text-gray-600 mb-4 text-center font-bold">その通り！鋭い分析だね。</p>
-            
-            ${causationNote && html`
-                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 text-sm text-left w-full rounded">
-                    <h4 class="font-bold text-yellow-800 flex items-center mb-1">
-                        <span class="mr-2">💡</span>探偵メモ
-                    </h4>
-                    <p class="text-yellow-900 leading-relaxed">${causationNote}</p>
-                </div>
-            `}
-
-            <button 
-                onClick=${onNext}
-                class="px-8 py-3 bg-green-500 text-white rounded-full font-bold shadow-md hover:bg-green-600 transition-transform active:scale-95"
-            >
-                次のミッションへ ➡
-            </button>
         </div>
     </div>
 `;
@@ -707,74 +820,6 @@ const App = () => {
                 </div>
             </header>
 
-            <!-- Drill Mode Controller (Gamified) -->
-            ${mode === 'drill' && html`
-                <div class="bg-gradient-to-r from-slate-800 to-indigo-900 text-white px-4 py-4 md:px-6 shadow-lg flex-shrink-0 relative overflow-hidden">
-                    <!-- Background decoration -->
-                    <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2"></div>
-                    
-                    <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-4 items-start md:items-center relative z-10">
-                        <!-- Character & Dialogue -->
-                        <div class="flex-shrink-0 flex items-start gap-4 md:w-2/3">
-                            <div class="text-4xl md:text-5xl bg-white/10 rounded-full p-2 border-2 border-white/20 shadow-inner">
-                                ${drillFeedback === 'incorrect' || drillFeedback === 'same_variable' || drillFeedback === 'spurious' || drillFeedback === 'found_no_correlation' ? '🤔' : drillFeedback === 'correct' ? '😎' : '🧐'}
-                            </div>
-                            <div>
-                                <div class="flex items-center gap-3 mb-1">
-                                    <span class="inline-block px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded shadow-sm">
-                                        MISSION ${displayQuestIndex + 1}/${DRILL_QUESTS.length}
-                                    </span>
-                                    <!-- Progress Bar -->
-                                    <div class="w-32 h-2 bg-gray-700 rounded-full overflow-hidden">
-                                        <div class="h-full bg-orange-400 transition-all duration-500" style=${{ width: `${((displayQuestIndex) / DRILL_QUESTS.length) * 100}%` }}></div>
-                                    </div>
-                                </div>
-                                <h2 class="text-lg md:text-xl font-bold leading-tight mb-1 text-white shadow-black drop-shadow-md">
-                                    ${currentQuest.text}
-                                </h2>
-                                ${drillFeedback === 'incorrect' ? html`
-                                    <div class="text-orange-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
-                                        ⚠ ヒント: ${currentQuest.hint}
-                                    </div>
-                                ` : drillFeedback === 'incorrect_dataset' ? html`
-                                    <div class="text-red-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
-                                        ⚠ まずはデータソース設定で、対象のデータセットに切り替えよう！
-                                    </div>
-                                ` : drillFeedback === 'same_variable' ? html`
-                                    <div class="text-yellow-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
-                                        ⚠ 同じ項目同士だと必ず相関が1.0になってしまうよ。別の項目を比べてみよう！
-                                    </div>
-                                ` : drillFeedback === 'spurious' ? html`
-                                    <div class="text-pink-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
-                                        ⚠ 確かに相関はありそうだね！でも、ミッションの意図と合うかな？<br/>「因果関係」や「設問の文章」をもう一度よく読んでみよう！
-                                    </div>
-                                ` : drillFeedback === 'found_no_correlation' ? html`
-                                    <div class="text-gray-300 text-sm font-bold animate-pulse-fast bg-black/20 p-2 rounded">
-                                        ⚠ ん？ そのデータはバラバラで「相関がない」みたいだぞ。
-                                    </div>
-                                ` : html`
-                                    <p class="text-sm text-gray-300">
-                                        探偵の勘: 「${currentQuest.hint}」
-                                    </p>
-                                `}
-                            </div>
-                        </div>
-
-                        <!-- Actions -->
-                        <div class="flex-1 w-full flex justify-end md:justify-end items-center">
-                            <button 
-                                onClick=${handleDrillSubmit} 
-                                disabled=${drillFeedback === 'correct'}
-                                class="w-full md:w-auto px-8 py-3 bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-400 hover:to-orange-500 text-white font-bold rounded-xl shadow-lg border-b-4 border-orange-800 active:border-b-0 active:translate-y-1 transition-all flex items-center justify-center gap-2 group"
-                            >
-                                <span>調査報告をする</span>
-                                <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `}
-
             <!-- Main Area -->
             <main class="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden p-4 md:p-6 gap-4 md:gap-6 max-w-[1600px] w-full mx-auto">
                 
@@ -904,6 +949,18 @@ const App = () => {
 
             </main>
 
+            <!-- Drill Quest Window (Floating Assistant) -->
+            ${mode === 'drill' && html`
+                <${DrillQuestWindow}
+                    quest=${currentQuest}
+                    index=${displayQuestIndex}
+                    total=${DRILL_QUESTS.length}
+                    feedback=${drillFeedback}
+                    onSubmit=${handleDrillSubmit}
+                    onNext=${nextQuest}
+                />
+            `}
+
             <!-- Floating Window -->
             ${showDataWindow && html`
                 <${FloatingDataWindow} 
@@ -921,11 +978,6 @@ const App = () => {
                     onClose=${() => setShowInputModal(false)}
                     onImport=${handleImportData}
                 />
-            `}
-            
-            <!-- Gamification Overlays -->
-            ${drillFeedback === 'correct' && html`
-                <${CorrectOverlay} onNext=${nextQuest} causationNote=${currentQuest.causationNote} />
             `}
 
             ${showClearModal && html`
