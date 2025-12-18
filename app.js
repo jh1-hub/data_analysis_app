@@ -66,7 +66,6 @@ const Card = ({ title, children, className = "" }) => html`
 
 /**
  * 解説モードコンポーネント (TutorialMode)
- * デザインは標準に戻し、内容はより丁寧に、図解を復活させる。
  */
 const TutorialMode = ({ onFinish }) => {
     const [step, setStep] = useState(0);
@@ -270,30 +269,32 @@ const TutorialMode = ({ onFinish }) => {
                         </div>
 
                         <!-- Right: Truth -->
-                        <div class="bg-white p-6 rounded-2xl shadow-md border-2 border-indigo-50 flex flex-col items-center relative">
-                            <span class="text-xs font-bold text-indigo-500 mb-6 tracking-widest uppercase">本当の理由</span>
-                            <div class="relative w-full h-32 mb-4">
+                        <div class="bg-white p-6 rounded-2xl shadow-md border-2 border-indigo-50 flex flex-col items-center relative w-full">
+                            <span class="text-xs font-bold text-indigo-500 mb-4 tracking-widest uppercase">本当の理由</span>
+                            <div class="relative w-full h-40 mb-2">
                                 <!-- Common Cause -->
-                                <div class="absolute top-0 left-1/2 transform -translate-x-1/2 text-center">
+                                <div class="absolute top-0 left-1/2 transform -translate-x-1/2 text-center z-10">
                                     <div class="text-5xl animate-bounce-slow">☀️</div>
                                     <div class="text-xs font-bold bg-yellow-100 px-3 py-1 rounded-full">気温が高い</div>
                                 </div>
                                 <!-- Arrows -->
-                                <svg class="absolute inset-0 w-full h-full text-indigo-300" overflow="visible">
+                                <svg class="absolute inset-0 w-full h-full text-indigo-300" viewBox="0 0 400 160" preserveAspectRatio="none" overflow="visible">
                                     <defs>
                                         <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
                                             <path d="M0,0 L0,6 L9,3 z" fill="currentColor" />
                                         </marker>
                                     </defs>
-                                    <path d="M110 30 L 60 80" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arrow-blue)" stroke-dasharray="4"/>
-                                    <path d="M140 30 L 190 80" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arrow-blue)" stroke-dasharray="4"/>
+                                    <!-- Source (Temp): around (200, 60) -> Target Left (Ice): around (80, 110) -->
+                                    <path d="M180 60 L 100 110" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arrow-blue)" stroke-dasharray="4"/>
+                                    <!-- Source (Temp): around (200, 60) -> Target Right (Swim): around (320, 110) -->
+                                    <path d="M220 60 L 300 110" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#arrow-blue)" stroke-dasharray="4"/>
                                 </svg>
                                 <!-- Effects -->
-                                <div class="absolute bottom-0 left-4 text-center">
+                                <div class="absolute bottom-0 left-8 text-center z-10">
                                     <div class="text-4xl">🍦</div>
                                     <div class="text-[10px] font-bold">アイス売上増</div>
                                 </div>
-                                <div class="absolute bottom-0 right-4 text-center">
+                                <div class="absolute bottom-0 right-8 text-center z-10">
                                     <div class="text-4xl">🏊</div>
                                     <div class="text-[10px] font-bold">プール利用増</div>
                                 </div>
@@ -596,12 +597,14 @@ const AnalysisPanel = ({ xLabel, yLabel, correlation, regression, strength, acti
                     <span class="text-2xl font-black text-blue-700">${correlation.toFixed(3)}</span>
                 </div>
                 <${CorrelationMeter} r=${correlation} />
-                <div class="flex justify-between items-center mt-4">
-                    <span class="text-[10px] text-gray-400">n=${activeCount}/${totalCount}</span>
-                    <span class="px-2 py-1 text-xs font-bold rounded-lg 
+                <div class="mt-4 text-center">
+                    <span class="block w-full px-3 py-2 text-lg md:text-xl font-black rounded-lg shadow-sm 
                         ${strength.includes('かなり強い') ? 'bg-purple-100 text-purple-800' : 
                           strength.includes('正の') ? 'bg-red-100 text-red-800' :
-                          strength.includes('負の') ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-800'}">${strength}</span>
+                          strength.includes('負の') ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-800'}">
+                        ${strength}
+                    </span>
+                    <div class="text-right text-[10px] text-gray-400 mt-1">n=${activeCount}/${totalCount}</div>
                 </div>
             </div>
         </div>
@@ -735,7 +738,13 @@ const App = () => {
                                 <button onClick=${() => setShowDataWindow(true)} class="w-full py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all">データ一覧を表示</button>
                             </div>
                         </${Card}>
-                        <${Card} title="分析項目の選択" className="flex-1">
+                        
+                        <${Card} title="分析項目の選択" className=${`flex-1 transition-all duration-300 ${mode === 'drill' ? 'ring-4 ring-orange-300 shadow-orange-100 relative overflow-visible' : ''}`}>
+                            ${mode === 'drill' && html`
+                                <div class="absolute -top-4 right-4 bg-orange-500 text-white font-bold text-sm px-4 py-1 rounded-full animate-bounce shadow-lg z-20 pointer-events-none">
+                                    👇 ここを切り替えて調査！
+                                </div>
+                            `}
                             <div class="space-y-4">
                                 <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-50 ${mode === 'extra' ? 'opacity-50' : ''}">
                                     <label class="block text-[10px] font-black text-blue-800 mb-2 uppercase">X軸（横軸）</label>
