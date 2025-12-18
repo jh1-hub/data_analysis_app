@@ -1,5 +1,4 @@
 
-
 // プリセットデータセット定義
 
 export const DATASETS = [
@@ -17,16 +16,13 @@ export const DATASETS = [
             { key: "gaming_time", label: "ゲーム時間 (分/日)", type: "number", min: 0, max: 300 }
         ],
         data: [
-            // Updated Data: 
-            // - study_time: Positive with score
-            // - smartphone_time: Negative with score AND Negative with sleep_time
             { id: 1, study_time: 120, score: 85, smartphone_time: 60, height: 170, sleep_time: 7.5, commute_time: 30, gaming_time: 20 },
-            { id: 2, study_time: 30, score: 45, smartphone_time: 240, height: 165, sleep_time: 5.0, commute_time: 15, gaming_time: 180 }, // High Phone, Low Sleep
+            { id: 2, study_time: 30, score: 45, smartphone_time: 240, height: 165, sleep_time: 5.0, commute_time: 15, gaming_time: 180 },
             { id: 3, study_time: 90, score: 78, smartphone_time: 90, height: 172, sleep_time: 7.0, commute_time: 45, gaming_time: 60 },
-            { id: 4, study_time: 150, score: 92, smartphone_time: 45, height: 168, sleep_time: 8.0, commute_time: 20, gaming_time: 10 }, // Low Phone, High Sleep
+            { id: 4, study_time: 150, score: 92, smartphone_time: 45, height: 168, sleep_time: 8.0, commute_time: 20, gaming_time: 10 },
             { id: 5, study_time: 60, score: 60, smartphone_time: 150, height: 175, sleep_time: 6.5, commute_time: 60, gaming_time: 90 },
-            { id: 6, study_time: 10, score: 30, smartphone_time: 280, height: 160, sleep_time: 4.5, commute_time: 25, gaming_time: 200 }, // Very High Phone, Low Sleep
-            { id: 7, study_time: 180, score: 98, smartphone_time: 20, height: 171, sleep_time: 8.5, commute_time: 50, gaming_time: 0 },  // Very Low Phone, High Sleep
+            { id: 6, study_time: 10, score: 30, smartphone_time: 280, height: 160, sleep_time: 4.5, commute_time: 25, gaming_time: 200 },
+            { id: 7, study_time: 180, score: 98, smartphone_time: 20, height: 171, sleep_time: 8.5, commute_time: 50, gaming_time: 0 },
             { id: 8, study_time: 75, score: 70, smartphone_time: 100, height: 178, sleep_time: 7.0, commute_time: 10, gaming_time: 60 },
             { id: 9, study_time: 45, score: 55, smartphone_time: 180, height: 166, sleep_time: 6.0, commute_time: 40, gaming_time: 120 },
             { id: 10, study_time: 110, score: 82, smartphone_time: 70, height: 169, sleep_time: 7.5, commute_time: 35, gaming_time: 30 },
@@ -38,7 +34,7 @@ export const DATASETS = [
             { id: 16, study_time: 80, score: 72, smartphone_time: 110, height: 162, sleep_time: 7.0, commute_time: 25, gaming_time: 70 },
             { id: 17, study_time: 40, score: 50, smartphone_time: 190, height: 170, sleep_time: 5.8, commute_time: 60, gaming_time: 130 },
             { id: 18, study_time: 140, score: 90, smartphone_time: 55, height: 180, sleep_time: 7.8, commute_time: 10, gaming_time: 15 },
-            { id: 19, study_time: 5, score: 25, smartphone_time: 300, height: 164, sleep_time: 4.0, commute_time: 5, gaming_time: 240 }, // Max Phone, Min Sleep
+            { id: 19, study_time: 5, score: 25, smartphone_time: 300, height: 164, sleep_time: 4.0, commute_time: 5, gaming_time: 240 },
             { id: 20, study_time: 95, score: 76, smartphone_time: 95, height: 172, sleep_time: 7.0, commute_time: 30, gaming_time: 60 }
         ]
     },
@@ -123,7 +119,6 @@ export const DATASETS = [
             { key: "score", label: "テスト点数 (点)", type: "number", min: 0, max: 100 }
         ],
         data: [
-            // Base: Positive correlation
             { id: 1, study_time: 120, score: 85 },
             { id: 2, study_time: 30, score: 45 },
             { id: 3, study_time: 90, score: 78 },
@@ -137,9 +132,8 @@ export const DATASETS = [
             { id: 11, study_time: 130, score: 88 },
             { id: 12, study_time: 20, score: 40 },
             { id: 13, study_time: 100, score: 75 },
-            // NOISE DATA (Outliers)
-            { id: 99, study_time: 10, score: 95 }, // Low study, High score (lucky?)
-            { id: 100, study_time: 250, score: 10 } // High study, Low score (mistake?)
+            { id: 99, study_time: 10, score: 95 },
+            { id: 100, study_time: 250, score: 10 }
         ]
     },
     {
@@ -151,7 +145,6 @@ export const DATASETS = [
             { key: "cold_drink_sales", label: "清涼飲料水売上 (本)", type: "number", min: 0, max: 500 }
         ],
         data: [
-             // Base: Positive correlation
             { id: 1, temperature: 35.0, cold_drink_sales: 450 },
             { id: 2, temperature: 28.0, cold_drink_sales: 200 },
             { id: 3, temperature: 33.5, cold_drink_sales: 400 },
@@ -166,9 +159,8 @@ export const DATASETS = [
             { id: 12, temperature: 23.0, cold_drink_sales: 110 },
             { id: 13, temperature: 32.5, cold_drink_sales: 380 },
             { id: 14, temperature: 27.5, cold_drink_sales: 190 },
-            // NOISE DATA
-            { id: 98, temperature: 38.0, cold_drink_sales: 50 }, // Hot but low sales (Out of stock?)
-            { id: 99, temperature: 21.0, cold_drink_sales: 450 } // Cold but high sales (Event?)
+            { id: 98, temperature: 38.0, cold_drink_sales: 50 },
+            { id: 99, temperature: 21.0, cold_drink_sales: 450 }
         ]
     },
     {
@@ -180,7 +172,6 @@ export const DATASETS = [
             { key: "hp", label: "最大HP", type: "number", min: 100, max: 5000 }
         ],
         data: [
-            // Base: Positive correlation
             { id: 1, level: 10, hp: 500 },
             { id: 2, level: 45, hp: 4500 },
             { id: 3, level: 25, hp: 2500 },
@@ -196,10 +187,9 @@ export const DATASETS = [
             { id: 13, level: 22, hp: 2200 },
             { id: 14, level: 8, hp: 400 },
             { id: 15, level: 42, hp: 4200 },
-            // NOISE DATA
-            { id: 97, level: 49, hp: 100 }, // High level low HP (Bug?)
-            { id: 98, level: 1, hp: 5000 }, // Low level high HP (Cheat?)
-            { id: 99, level: 46, hp: 50 }   // Another high level bug
+            { id: 97, level: 49, hp: 100 },
+            { id: 98, level: 1, hp: 5000 },
+            { id: 99, level: 46, hp: 50 }
         ]
     }
 ];
@@ -227,7 +217,7 @@ export const DRILL_QUESTS = [
         validAnswers: ["score"], 
         expectedStrength: "かなり強い負の相関がある",
         hint: "いくつか負の相関（右下がり）がある項目があるけど、グラフの点が一番キレイに直線に並ぶのはどれかな？",
-        causationNote: "【考察】スマホの長時間利用は、睡眠時間を減らし、結果として成績を下げる原因になっている可能性があります。（※睡眠時間や勉強時間とも負の相関がありますが、今回は最も強い相関がある「成績」が正解です）"
+        causationNote: "【考察】スマホの長時間利用は、睡眠時間を減らし、結果として成績を下げる原因になっている可能性があります。"
     },
     {
         id: 3,
@@ -263,7 +253,7 @@ export const DRILL_QUESTS = [
         validAnswers: ["cold_drink_sales"], 
         expectedStrength: "かなり強い正の相関がある",
         hint: "アイスが売れる暑い日は、他の冷たいものも売れているはず！",
-        causationNote: "【重要：因果関係なし！】アイスが売れたからジュースが売れたわけではありません。「気温が高い」という共通の原因があるため、両方売れたのです。これを「擬似相関」と呼びます。"
+        causationNote: "【重要：因果関係なし！】これを「擬似相関」と呼びます。"
     },
     {
         id: 6,
@@ -275,7 +265,7 @@ export const DRILL_QUESTS = [
         validAnswers: ["hp", "attack"], 
         expectedStrength: "かなり強い正の相関がある",
         hint: "レベルが上がると、キャラクターは全体的に強くなるよ！",
-        causationNote: "【正解】レベルアップという仕組みによって、HPも攻撃力も上昇するように設定されています。どちらを選んでも正解です！"
+        causationNote: "【正解】レベルアップによって、HPも攻撃力も上昇するように設定されています。"
     },
     {
         id: 7,
@@ -299,6 +289,6 @@ export const DRILL_QUESTS = [
         validAnswers: ["height", "commute_time"],
         expectedStrength: "ほとんど相関がない",
         hint: "背の高さや通学時間で、テストの点数は決まるかな？",
-        causationNote: "【相関なし】身長や通学時間と、学力には直接的な関係は見られません。このように散布図がバラバラになり、傾向が見られない状態を「無相関」と呼びます。"
+        causationNote: "【相関なし】これを「無相関」と呼びます。"
     }
 ];
