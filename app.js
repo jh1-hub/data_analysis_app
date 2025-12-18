@@ -123,6 +123,86 @@ const TutorialMode = ({ onFinish }) => {
             noiseY: Math.random() * 2 - 1,
         }));
     }, []);
+
+    // State for Step 4 Interactive Task (Regression)
+    const [step4Line, setStep4Line] = useState({ leftY: 80, rightY: 20 }); // Initial bad line (reversed slope)
+    const [step4Status, setStep4Status] = useState('playing'); // 'playing' | 'checked' | 'cleared'
+    const step4DraggingRef = useRef(null); // 'left' | 'right' | null
+
+    // Step 4 Data and True Regression Calculation
+    const { step4Data, trueRegressionLine } = useMemo(() => {
+        // Generate a simple dataset with positive correlation
+        const data = Array.from({length: 20}, (_, i) => {
+            const x = 10 + i * 4 + (Math.random() * 10 - 5);
+            // y = 0.8x + 10 + noise
+            const y = 0.8 * x + 10 + (Math.random() * 20 - 10);
+            return { x, y };
+        });
+        
+        // Simple linear regression logic specialized for 0-100 scale visualization
+        // Map x to 0-100 range for display logic
+        const xMin = 0, xMax = 100;
+        const yMin = 0, yMax = 120; // Viewbox Y range
+        
+        // Calculate regression based on raw values
+        const n = data.length;
+        const sumX = data.reduce((a, b) => a + b.x, 0);
+        const sumY = data.reduce((a, b) => a + b.y, 0);
+        const sumXY = data.reduce((a, b) => a + b.x * b.y, 0);
+        const sumXX = data.reduce((a, b) => a + b.x * b.x, 0);
+        const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+
+        // Calculate Y for Left (x=10) and Right (x=90) in SVG coordinates
+        // SVG Y is inverted (0 is top), and we map value 0-120 to height 120-0
+        const getSvgY = (val) => 120 - val; // Simple inversion since viewbox h=120
+        
+        const trueLeftVal = slope * 10 + intercept;
+        const trueRightVal = slope * 90 + intercept;
+
+        return {
+            step4Data: data.map(p => ({
+                cx: p.x, // direct mapping for simplicity
+                cy: getSvgY(p.y)
+            })),
+            trueRegressionLine: {
+                leftY: getSvgY(trueLeftVal),
+                rightY: getSvgY(trueRightVal)
+            }
+        };
+    }, []);
+
+    // Step 4 Handler
+    const handleStep4Drag = (e) => {
+        if (!step4DraggingRef.current) return;
+        const svg = e.currentTarget;
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+        
+        // Clamp Y to viewbox 0-120
+        const newY = Math.max(0, Math.min(120, svgP.y));
+        
+        setStep4Line(prev => ({
+            ...prev,
+            [step4DraggingRef.current === 'left' ? 'leftY' : 'rightY']: newY
+        }));
+    };
+    
+    const checkStep4 = () => {
+        const threshold = 15; // Tolerance
+        const diffLeft = Math.abs(step4Line.leftY - trueRegressionLine.leftY);
+        const diffRight = Math.abs(step4Line.rightY - trueRegressionLine.rightY);
+        
+        if (diffLeft < threshold && diffRight < threshold) {
+            setStep4Status('cleared');
+            // Snap to true line for satisfaction
+            setStep4Line(trueRegressionLine);
+        } else {
+            setStep4Status('checked'); // Show failure hint
+        }
+    };
     
     // State for Step 5 Mobile Toggle
     const [step5ShowTruth, setStep5ShowTruth] = useState(false);
@@ -211,6 +291,42 @@ const TutorialMode = ({ onFinish }) => {
                     return html`<circle key=${i} cx=${plotX} cy=${plotY} r="3" fill="#6366f1" opacity="0.6" />`;
                 })}
                 <text x="190" y="20" font-size="16" fill="#6366f1" font-weight="bold" opacity="0.8" text-anchor="end">r = ${step3R.toFixed(1)}</text>
+            </svg>
+        `;
+    };
+
+    // Step 4 Interactive Regression
+    const renderInteractiveRegression = () => {
+        return html`
+            <svg viewBox="0 0 100 120" class="w-full h-full overflow-visible bg-white dark:bg-slate-800 rounded cursor-crosshair touch-none"
+                onPointerMove=${handleStep4Drag}
+                onPointerUp=${() => step4DraggingRef.current = null}
+                onPointerLeave=${() => step4DraggingRef.current = null}
+            >
+                <!-- Axis -->
+                <line x1="0" y1="120" x2="100" y2="120" stroke="#333" stroke-width="1"/>
+                <line x1="0" y1="0" x2="0" y2="120" stroke="#333" stroke-width="1"/>
+                
+                <!-- Points -->
+                ${step4Data.map((p, i) => html`
+                    <circle key=${i} cx=${p.cx} cy=${p.cy} r="2.5" fill="#6366f1" opacity="0.5" />
+                `)}
+                
+                <!-- True Regression Line (Orange, hidden until cleared) -->
+                ${step4Status === 'cleared' && html`
+                    <line x1="10" y1=${trueRegressionLine.leftY} x2="90" y2=${trueRegressionLine.rightY} 
+                        stroke="#f97316" stroke-width="3" stroke-dasharray="4" class="animate-fade-in-up" />
+                `}
+
+                <!-- User Line (Blue) -->
+                <line x1="10" y1=${step4Line.leftY} x2="90" y2=${step4Line.rightY} 
+                    stroke=${step4Status === 'cleared' ? '#cbd5e1' : '#3b82f6'} stroke-width="3" stroke-linecap="round" />
+                
+                <!-- Handles -->
+                <circle cx="10" cy=${step4Line.leftY} r="6" fill="#3b82f6" stroke="white" stroke-width="2" class="cursor-ns-resize hover:scale-125 transition-transform"
+                    onPointerDown=${(e) => { e.currentTarget.setPointerCapture(e.pointerId); step4DraggingRef.current = 'left'; }} />
+                <circle cx="90" cy=${step4Line.rightY} r="6" fill="#3b82f6" stroke="white" stroke-width="2" class="cursor-ns-resize hover:scale-125 transition-transform"
+                    onPointerDown=${(e) => { e.currentTarget.setPointerCapture(e.pointerId); step4DraggingRef.current = 'right'; }} />
             </svg>
         `;
     };
@@ -461,20 +577,17 @@ const TutorialMode = ({ onFinish }) => {
                 <div class="flex flex-col items-center h-full space-y-4 animate-fade-in-up py-4 max-w-5xl mx-auto justify-center">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center w-full">
                         <!-- Left: Visual -->
-                        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 aspect-video relative overflow-hidden">
-                            <svg viewBox="0 0 200 150" class="w-full h-full">
-                                <!-- Scatter Points -->
-                                ${[...Array(15)].map((_,i) => {
-                                    const x = 20 + i * 10 + (Math.random()*10-5);
-                                    const y = 130 - (i * 8) + (Math.random()*15-7.5);
-                                    return html`<circle key=${i} cx=${x} cy=${y} r="3" fill="#6366f1" opacity="0.5" />`;
-                                })}
-                                <!-- Regression Line -->
-                                <line x1="20" y1="130" x2="160" y2="20" stroke="#f97316" stroke-width="3" stroke-linecap="round" class="animate-grow-x" />
-                                <text x="165" y="25" fill="#f97316" font-size="10" font-weight="bold">y = ax + b</text>
-                            </svg>
-                            <div class="absolute bottom-2 left-0 right-0 text-center ${tc('text-xs')} text-orange-500 font-bold">
-                                データの中心を通る線（回帰直線）
+                        <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 aspect-video relative overflow-hidden flex flex-col">
+                            <div class="flex-1 w-full relative">
+                                ${renderInteractiveRegression()}
+                            </div>
+                            
+                            <div class="absolute bottom-2 left-0 right-0 text-center pointer-events-none">
+                                ${step4Status !== 'cleared' && html`
+                                    <div class="inline-block bg-white/90 dark:bg-slate-800/90 px-3 py-1 rounded-full shadow border border-indigo-100 ${tc('text-xs')} text-indigo-600 font-bold animate-pulse">
+                                        青い線の両端を動かして、中心を通る線を作ろう
+                                    </div>
+                                `}
                             </div>
                         </div>
 
@@ -493,12 +606,27 @@ const TutorialMode = ({ onFinish }) => {
                                     アプリ上の<span class="text-orange-500 font-bold">オレンジ色の線</span>が、その式を表しています。
                                 </p>
                             </div>
-
-                             <div class="bg-gray-50 dark:bg-slate-700 p-3 rounded-xl border border-gray-200 dark:border-slate-600">
-                                <h4 class="font-bold text-gray-800 dark:text-slate-200 mb-1 ${tc('text-sm')} md:${tc('text-base')}">単回帰分析（たんかいきぶんせき）</h4>
-                                <p class="${tc('text-xs')} md:${tc('text-sm')} text-gray-600 dark:text-slate-400">
-                                    今回のアプリのように、「勉強時間（1つのデータ）」を使って「成績（もう1つのデータ）」を予測するシンプルな分析のことを特にこう呼びます。
-                                </p>
+                            
+                            <!-- Interactive Check Box -->
+                            <div class="bg-indigo-50 dark:bg-slate-800 p-3 rounded-xl border border-indigo-200 dark:border-slate-600 flex flex-col items-center gap-2">
+                                <h4 class="font-bold text-gray-800 dark:text-slate-200 ${tc('text-sm')}">【ミッション】予測線を引こう！</h4>
+                                ${step4Status === 'cleared' ? html`
+                                    <div class="text-center w-full">
+                                        <p class="text-green-600 font-black ${tc('text-lg')} animate-bounce-slow">PERFECT! 🎉</p>
+                                        <p class="${tc('text-xs')} text-gray-500">あなたの線はかなり正確でした！</p>
+                                    </div>
+                                ` : html`
+                                    <div class="w-full">
+                                        <button onClick=${checkStep4} class="w-full py-2 bg-indigo-600 text-white font-bold rounded shadow hover:bg-indigo-700 active:scale-95 transition-all">
+                                            答え合わせ
+                                        </button>
+                                        ${step4Status === 'checked' && html`
+                                            <p class="text-center text-red-500 font-bold ${tc('text-xs')} mt-2 animate-shake">
+                                                もう少し中心を通るように調整してみよう…
+                                            </p>
+                                        `}
+                                    </div>
+                                `}
                             </div>
                         </div>
                     </div>
@@ -624,8 +752,12 @@ const TutorialMode = ({ onFinish }) => {
             // ステップ3は、スライダータスクをクリアしないと進めない
             return step3Cleared;
         }
+        if (step === 4) {
+             // ステップ4は、回帰直線タスクをクリアしないと進めない
+             return step4Status === 'cleared';
+        }
         return true;
-    }, [step, plotStep, demoType, step3Cleared]);
+    }, [step, plotStep, demoType, step3Cleared, step4Status]);
 
     return html`
         <div class="flex-1 flex flex-col min-h-0 p-2 md:p-3 xl:max-w-6xl mx-auto w-full">
