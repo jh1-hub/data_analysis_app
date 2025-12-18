@@ -102,6 +102,228 @@ const Card = ({ title, children, className = "" }) => html`
 `;
 
 /**
+ * 相関マスターモード (MasterMode)
+ * ランダムに生成された散布図の相関係数を当てるゲーム
+ */
+const MasterMode = ({ onExit }) => {
+    const [round, setRound] = useState(1);
+    const [score, setScore] = useState(0);
+    const [gameState, setGameState] = useState('playing'); // 'playing', 'result', 'finished'
+    const [currentData, setCurrentData] = useState(null);
+    const [userGuess, setUserGuess] = useState(0);
+    const [history, setHistory] = useState([]);
+    const TOTAL_ROUNDS = 10;
+
+    // データ生成ロジック
+    const generateData = () => {
+        const count = 30;
+        // ランダムな相関パターンを生成
+        const types = ['strong_pos', 'mod_pos', 'weak_pos', 'none', 'weak_neg', 'mod_neg', 'strong_neg'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        
+        let slope = 0;
+        let noiseLevel = 0;
+        
+        switch(type) {
+            case 'strong_pos': slope = 1 + Math.random(); noiseLevel = 15; break;
+            case 'mod_pos': slope = 0.5 + Math.random(); noiseLevel = 40; break;
+            case 'weak_pos': slope = 0.2 + Math.random() * 0.3; noiseLevel = 80; break;
+            case 'none': slope = (Math.random() - 0.5) * 0.2; noiseLevel = 100; break;
+            case 'weak_neg': slope = -0.2 - Math.random() * 0.3; noiseLevel = 80; break;
+            case 'mod_neg': slope = -0.5 - Math.random(); noiseLevel = 40; break;
+            case 'strong_neg': slope = -1 - Math.random(); noiseLevel = 15; break;
+        }
+
+        const data = [];
+        for(let i=0; i<count; i++) {
+            const x = Math.random() * 100;
+            const y = (x * slope) + 50 + ((Math.random() - 0.5) * 2 * noiseLevel);
+            data.push({ id: i, x, y });
+        }
+        
+        // 正解のRを計算
+        const xArr = data.map(d => d.x);
+        const yArr = data.map(d => d.y);
+        const r = MathUtils.calculateCorrelation(xArr, yArr);
+
+        return { data, r };
+    };
+
+    useEffect(() => {
+        setCurrentData(generateData());
+        setUserGuess(0);
+    }, []);
+
+    const handleSubmit = () => {
+        const diff = Math.abs(currentData.r - userGuess);
+        // スコア計算: 誤差0で100点、誤差0.5以上で0点
+        const points = Math.max(0, Math.round((1 - (diff * 2)) * 100));
+        
+        setScore(prev => prev + points);
+        setHistory(prev => [...prev, { round, r: currentData.r, guess: userGuess, points }]);
+        setGameState('result');
+    };
+
+    const handleNext = () => {
+        if (round >= TOTAL_ROUNDS) {
+            setGameState('finished');
+        } else {
+            setRound(prev => prev + 1);
+            setCurrentData(generateData());
+            setUserGuess(0);
+            setGameState('playing');
+        }
+    };
+
+    const handleRetry = () => {
+        setRound(1);
+        setScore(0);
+        setHistory([]);
+        setCurrentData(generateData());
+        setUserGuess(0);
+        setGameState('playing');
+    };
+
+    // 散布図の表示設定（軸などを隠してシンプルにする）
+    const scatterConfig = {
+        key: 'temp', label: '', type: 'number'
+    };
+
+    if (gameState === 'finished') {
+        const getRank = (s) => {
+            if (s >= 900) return "S (神の目)";
+            if (s >= 800) return "A (データマスター)";
+            if (s >= 600) return "B (一人前)";
+            return "C (修行中)";
+        };
+        return html`
+            <div class="h-full flex flex-col items-center justify-center p-4 animate-fade-in-up">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 max-w-lg w-full text-center border-2 border-indigo-500">
+                    <h2 class="text-2xl font-black text-gray-800 dark:text-white mb-2">RESULT</h2>
+                    <div class="text-6xl font-black text-indigo-600 dark:text-indigo-400 mb-2">${score} <span class="text-xl">pts</span></div>
+                    <div class="text-xl font-bold text-gray-600 dark:text-slate-300 mb-6">Rank: ${getRank(score)}</div>
+                    
+                    <div class="bg-gray-50 dark:bg-slate-700/50 rounded-lg p-4 mb-6 max-h-48 overflow-y-auto text-sm">
+                        <table class="w-full text-left">
+                            <thead class="text-gray-500 dark:text-slate-400 border-b dark:border-slate-600">
+                                <tr><th>Round</th><th>正解</th><th>予想</th><th>Pts</th></tr>
+                            </thead>
+                            <tbody class="text-gray-700 dark:text-slate-200">
+                                ${history.map((h, i) => html`
+                                    <tr key=${i} class="border-b dark:border-slate-700/50">
+                                        <td class="py-1">${h.round}</td>
+                                        <td class="font-mono font-bold">${h.r.toFixed(2)}</td>
+                                        <td class="font-mono">${h.guess.toFixed(2)}</td>
+                                        <td class="font-bold text-indigo-600 dark:text-indigo-400">+${h.points}</td>
+                                    </tr>
+                                `)}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button onClick=${onExit} class="flex-1 py-3 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-xl font-bold hover:bg-gray-300 dark:hover:bg-slate-600">
+                            終了
+                        </button>
+                        <button onClick=${handleRetry} class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700 hover:scale-105 transition-all">
+                            もう一度挑戦
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    return html`
+        <div class="h-full flex flex-col p-2 md:p-4 max-w-4xl mx-auto w-full">
+            <div class="flex justify-between items-center mb-4 bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+                <div class="font-black text-xl text-gray-800 dark:text-white">
+                    <span class="text-indigo-500 mr-2">ROUND</span>
+                    ${round} <span class="text-sm text-gray-400">/ ${TOTAL_ROUNDS}</span>
+                </div>
+                <div class="font-black text-xl text-gray-800 dark:text-white">
+                    SCORE: <span class="text-indigo-600 dark:text-indigo-400">${score}</span>
+                </div>
+            </div>
+
+            <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-inner border border-gray-200 dark:border-slate-700 p-2 md:p-6 mb-4 relative overflow-hidden flex flex-col justify-center">
+                 <div class="absolute top-2 left-2 text-xs font-bold text-gray-300 dark:text-slate-600">X: Variable A</div>
+                 <div class="absolute bottom-2 right-2 text-xs font-bold text-gray-300 dark:text-slate-600">Y: Variable B</div>
+                 ${currentData && html`
+                    <${ResponsiveContainer} width="100%" height="100%">
+                        <${ScatterChart} margin=${{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                            <${CartesianGrid} strokeDasharray="3 3" opacity=${0.3} />
+                            <${XAxis} type="number" dataKey="x" hide domain=${['auto', 'auto']} />
+                            <${YAxis} type="number" dataKey="y" hide domain=${['auto', 'auto']} />
+                            <${Scatter} data=${currentData.data} fill="#8884d8">
+                                ${currentData.data.map((entry, index) => html`
+                                    <${Cell} key=${index} fill="#6366f1" />
+                                `)}
+                            </${Scatter}>
+                            ${gameState === 'result' && html`
+                                <!-- Show Regression Line on Result -->
+                                <${Line} 
+                                    data=${[
+                                        { x: 0, y: MathUtils.predictY(0, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).slope, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).intercept) },
+                                        { x: 100, y: MathUtils.predictY(100, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).slope, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).intercept) }
+                                    ]} 
+                                    dataKey="y" stroke="#f97316" strokeWidth=${3} dot=${false} 
+                                />
+                            `}
+                        </${ScatterChart}>
+                    </${ResponsiveContainer}>
+                 `}
+                 
+                 ${gameState === 'result' && html`
+                    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center animate-fade-in-up z-10">
+                        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-2xl text-center border-4 border-indigo-500 transform scale-110">
+                            <div class="text-sm font-bold text-gray-500 dark:text-slate-400 mb-1">正解</div>
+                            <div class="text-5xl font-black text-indigo-600 dark:text-indigo-400 mb-4 font-mono">${currentData.r.toFixed(2)}</div>
+                            <div class="flex justify-between gap-8 text-sm border-t dark:border-slate-700 pt-3">
+                                <div>
+                                    <div class="font-bold text-gray-400">予想</div>
+                                    <div class="font-mono font-bold text-gray-800 dark:text-white">${userGuess.toFixed(2)}</div>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-gray-400">誤差</div>
+                                    <div class="font-mono font-bold text-red-500">${Math.abs(currentData.r - userGuess).toFixed(2)}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                 `}
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-lg border border-gray-100 dark:border-slate-700">
+                ${gameState === 'playing' ? html`
+                    <div class="flex flex-col gap-4">
+                        <div class="flex justify-between items-center px-2">
+                            <span class="font-mono text-gray-400 font-bold">-1.00</span>
+                            <span class="text-4xl font-black text-indigo-600 dark:text-indigo-400 font-mono tracking-wider w-32 text-center bg-gray-50 dark:bg-slate-900 rounded-lg py-1 border dark:border-slate-700">
+                                ${userGuess.toFixed(2)}
+                            </span>
+                            <span class="font-mono text-gray-400 font-bold">1.00</span>
+                        </div>
+                        <input type="range" min="-1" max="1" step="0.01" value=${userGuess} 
+                            onInput=${(e) => setUserGuess(parseFloat(e.target.value))}
+                            class="w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                        
+                        <button onClick=${handleSubmit} class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-xl shadow-md hover:bg-indigo-700 active:scale-95 transition-all">
+                            決定
+                        </button>
+                    </div>
+                ` : html`
+                    <button onClick=${handleNext} class="w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-xl shadow-md hover:bg-orange-600 active:scale-95 transition-all animate-pulse">
+                        次へ進む ➡
+                    </button>
+                `}
+            </div>
+        </div>
+    `;
+};
+
+
+/**
  * 解説モードコンポーネント (TutorialMode)
  */
 const TutorialMode = ({ onFinish }) => {
@@ -1063,7 +1285,7 @@ const CorrelationMeter = ({ r }) => {
 
 // Main App Component (React 19)
 const App = () => {
-    const [mode, setMode] = useState('explanation');
+    const [mode, setMode] = useState('explanation'); // explanation, drill, exploration, extra, master
     const [availableDatasets, setAvailableDatasets] = useState(DATASETS);
     const [datasetId, setDatasetId] = useState(DATASETS[0].id);
     const [xKey, setXKey] = useState(DATASETS[0].columns[0].key);
@@ -1176,6 +1398,74 @@ const App = () => {
         return 'bg-gray-50';
     }, [isGameComplete]);
 
+    const renderMainContent = () => {
+        if (mode === 'explanation') return html`<${TutorialMode} onFinish=${() => setMode('drill')} />`;
+        if (mode === 'master') return html`<${MasterMode} onExit=${() => setMode('exploration')} />`;
+        
+        return html`
+            <main class="flex-1 flex flex-col lg:flex-row overflow-hidden p-2 md:p-4 gap-2 md:gap-4 w-full relative">
+                <aside class="w-full lg:w-72 flex flex-col gap-2 shrink-0 overflow-y-auto pr-1">
+                    <${Card} title="データソース設定">
+                        <div class="space-y-3">
+                            <div>
+                                <select class="block w-full border border-gray-200 dark:border-slate-600 rounded-lg p-1.5 bg-white dark:bg-slate-700 dark:text-white text-sm font-bold" value=${datasetId} onChange=${e => setDatasetId(e.target.value)} disabled=${mode === 'extra'}>
+                                    ${availableDatasets.map(d => html`<option key=${d.id} value=${d.id}>${d.name}</option>`)}
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-slate-400 font-medium leading-relaxed">${dataset.description}</p>
+                            </div>
+                            <button onClick=${() => setShowDataWindow(true)} class="w-full py-1.5 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-600 transition-all">データ一覧</button>
+                        </div>
+                    </${Card}>
+                    
+                    <${Card} title="分析項目の選択" className=${`flex-1 transition-all duration-300 ${mode === 'drill' ? 'ring-4 ring-orange-300 shadow-orange-100 relative overflow-visible' : ''}`}>
+                        ${mode === 'drill' && html`
+                            <div class="absolute -top-4 right-4 bg-orange-500 text-white font-bold text-xs px-3 py-0.5 rounded-full animate-bounce shadow-lg z-20 pointer-events-none">
+                                👇 ここを調査！
+                            </div>
+                        `}
+                        <div class="space-y-3">
+                            <div class="p-2 bg-blue-50/50 dark:bg-slate-700/50 rounded-lg border border-blue-50 dark:border-slate-600 ${mode === 'extra' ? 'opacity-50' : ''}">
+                                <label class="block text-[10px] font-black text-blue-800 dark:text-blue-300 mb-1 uppercase">X軸（横軸）</label>
+                                <select class="w-full border border-blue-100 dark:border-slate-500 rounded-lg p-1.5 bg-white dark:bg-slate-800 dark:text-white text-sm font-bold" value=${xKey} onChange=${e => setXKey(e.target.value)} disabled=${mode === 'extra'}>
+                                    ${dataset.columns.map(c => html`<option key=${c.key} value=${c.key}>${c.label}</option>`)}
+                                </select>
+                            </div>
+                            <div class="flex justify-center"><button onClick=${handleSwapAxes} class="p-1.5 bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-slate-600 transition-all text-xs" disabled=${mode === 'extra'}>🔄 軸入替</button></div>
+                            <div class="p-2 bg-green-50/50 dark:bg-slate-700/50 rounded-lg border border-green-50 dark:border-slate-600 ${mode === 'extra' ? 'opacity-50' : ''}">
+                                <label class="block text-[10px] font-black text-green-800 dark:text-green-300 mb-1 uppercase">Y軸（縦軸）</label>
+                                <select class="w-full border border-green-100 dark:border-slate-500 rounded-lg p-1.5 bg-white dark:bg-slate-800 dark:text-white text-sm font-bold" value=${yKey} onChange=${e => setYKey(e.target.value)} disabled=${mode === 'extra'}>
+                                    ${dataset.columns.map(c => html`<option key=${c.key} value=${c.key}>${c.label}</option>`)}
+                                </select>
+                            </div>
+                        </div>
+                    </${Card}>
+                </aside>
+                <section class="flex-1 flex flex-col min-w-0">
+                    <${Card} className="h-full shadow-md border-gray-200">
+                        <div class="h-full flex flex-col">
+                            <div class="flex justify-between items-center mb-2 px-1">
+                                <h2 class="text-sm font-black text-gray-800 dark:text-slate-100"><span class="text-blue-500 dark:text-blue-400">${xColumn.label}</span> vs <span class="text-green-500 dark:text-green-400">${yColumn.label}</span></h2>
+                                <div class="flex gap-2 text-[8px] font-black text-gray-400 dark:text-slate-500 uppercase">
+                                    <div class="flex items-center gap-1"><div class="w-2 h-2 bg-indigo-500 rounded"></div> データ</div>
+                                    <div class="flex items-center gap-1"><div class="w-2 h-2 bg-orange-500 rounded-full"></div> 回帰</div>
+                                </div>
+                            </div>
+                            <div class="flex-1"><${ScatterVis} data=${dataset.data} xConfig=${xColumn} yConfig=${yColumn} regression=${stats.regression} excludedIds=${excludedIds} onTogglePoint=${togglePoint} visualMode=${visualMode} isDark=${isDark} /></div>
+                        </div>
+                    </${Card}>
+                </section>
+                <aside class="w-full lg:w-64 flex-shrink-0">
+                    <${Card} title="統計結果" className="h-full">
+                        <${AnalysisPanel} xLabel=${xColumn.label} yLabel=${yColumn.label} correlation=${stats.correlation} regression=${stats.regression} strength=${stats.strength} activeCount=${stats.activeCount} totalCount=${dataset.data.length} />
+                    </${Card}>
+                </aside>
+                
+                ${mode === 'drill' && !showClearModal && html`<${DrillQuestWindow} quest=${DRILL_QUESTS[currentQuestIndex]} index=${currentQuestIndex} total=${DRILL_QUESTS.length} feedback=${drillFeedback} onSubmit=${handleDrillSubmit} onNext=${nextQuest} hasCleared=${hasCleared} onRestart=${restartDrill} />`}
+                ${mode === 'extra' && html`<${ExtraMissionWindow} correlation=${stats.correlation} activeCount=${stats.activeCount} stage=${extraMissionLevel} totalStages=${EXTRA_MISSION_STAGES.length} targetR=${EXTRA_MISSION_STAGES[extraMissionLevel].targetR} targetIds=${EXTRA_MISSION_STAGES[extraMissionLevel].targetIds} missionType=${EXTRA_MISSION_STAGES[extraMissionLevel].type} excludedIds=${excludedIds} onNext=${nextExtraMission} onComplete=${finishExtraMission} />`}
+            </main>
+        `;
+    };
+
     return html`
         <div class="h-full flex flex-col font-sans transition-all duration-1000 overflow-hidden ${bgClass}">
             <header class="bg-white dark:bg-slate-900 px-3 py-1 md:py-3 flex items-center justify-between shadow-md z-10 border-b dark:border-slate-800 shrink-0 h-12 md:h-auto">
@@ -1191,71 +1481,13 @@ const App = () => {
                     <button class="px-3 py-1 rounded-md text-xs font-bold transition-all whitespace-nowrap ${mode === 'explanation' ? 'bg-white text-indigo-600 shadow-sm dark:bg-slate-700 dark:text-indigo-300' : 'text-gray-400 dark:text-slate-500'}" onClick=${() => setMode('explanation')}>📚 解説</button>
                     <button class="px-3 py-1 rounded-md text-xs font-bold transition-all whitespace-nowrap ${mode === 'drill' ? 'bg-white text-orange-600 shadow-sm dark:bg-slate-700 dark:text-orange-300' : 'text-gray-400 dark:text-slate-500'}" onClick=${() => setMode('drill')}>🔎 ドリル</button>
                     <button class="px-3 py-1 rounded-md text-xs font-bold transition-all whitespace-nowrap ${mode === 'exploration' ? 'bg-white text-green-600 shadow-sm dark:bg-slate-700 dark:text-green-300' : 'text-gray-400 dark:text-slate-500'}" onClick=${() => setMode('exploration')}>📊 自由</button>
+                    ${isGameComplete && html`
+                        <button class="px-3 py-1 rounded-md text-xs font-bold transition-all whitespace-nowrap bg-purple-100 text-purple-700 shadow-sm hover:bg-purple-200 dark:bg-purple-900/50 dark:text-purple-300" onClick=${() => setMode('master')}>👑 Master</button>
+                    `}
                 </div>
             </header>
 
-            ${mode === 'explanation' ? html`<${TutorialMode} onFinish=${() => setMode('drill')} />` : html`
-                <main class="flex-1 flex flex-col lg:flex-row overflow-hidden p-2 md:p-4 gap-2 md:gap-4 w-full relative">
-                    <aside class="w-full lg:w-72 flex flex-col gap-2 shrink-0 overflow-y-auto pr-1">
-                        <${Card} title="データソース設定">
-                            <div class="space-y-3">
-                                <div>
-                                    <select class="block w-full border border-gray-200 dark:border-slate-600 rounded-lg p-1.5 bg-white dark:bg-slate-700 dark:text-white text-sm font-bold" value=${datasetId} onChange=${e => setDatasetId(e.target.value)} disabled=${mode === 'extra'}>
-                                        ${availableDatasets.map(d => html`<option key=${d.id} value=${d.id}>${d.name}</option>`)}
-                                    </select>
-                                    <p class="mt-1 text-xs text-gray-500 dark:text-slate-400 font-medium leading-relaxed">${dataset.description}</p>
-                                </div>
-                                <button onClick=${() => setShowDataWindow(true)} class="w-full py-1.5 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-xs font-bold text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-600 transition-all">データ一覧</button>
-                            </div>
-                        </${Card}>
-                        
-                        <${Card} title="分析項目の選択" className=${`flex-1 transition-all duration-300 ${mode === 'drill' ? 'ring-4 ring-orange-300 shadow-orange-100 relative overflow-visible' : ''}`}>
-                            ${mode === 'drill' && html`
-                                <div class="absolute -top-4 right-4 bg-orange-500 text-white font-bold text-xs px-3 py-0.5 rounded-full animate-bounce shadow-lg z-20 pointer-events-none">
-                                    👇 ここを調査！
-                                </div>
-                            `}
-                            <div class="space-y-3">
-                                <div class="p-2 bg-blue-50/50 dark:bg-slate-700/50 rounded-lg border border-blue-50 dark:border-slate-600 ${mode === 'extra' ? 'opacity-50' : ''}">
-                                    <label class="block text-[10px] font-black text-blue-800 dark:text-blue-300 mb-1 uppercase">X軸（横軸）</label>
-                                    <select class="w-full border border-blue-100 dark:border-slate-500 rounded-lg p-1.5 bg-white dark:bg-slate-800 dark:text-white text-sm font-bold" value=${xKey} onChange=${e => setXKey(e.target.value)} disabled=${mode === 'extra'}>
-                                        ${dataset.columns.map(c => html`<option key=${c.key} value=${c.key}>${c.label}</option>`)}
-                                    </select>
-                                </div>
-                                <div class="flex justify-center"><button onClick=${handleSwapAxes} class="p-1.5 bg-white dark:bg-slate-700 border border-gray-100 dark:border-slate-600 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-slate-600 transition-all text-xs" disabled=${mode === 'extra'}>🔄 軸入替</button></div>
-                                <div class="p-2 bg-green-50/50 dark:bg-slate-700/50 rounded-lg border border-green-50 dark:border-slate-600 ${mode === 'extra' ? 'opacity-50' : ''}">
-                                    <label class="block text-[10px] font-black text-green-800 dark:text-green-300 mb-1 uppercase">Y軸（縦軸）</label>
-                                    <select class="w-full border border-green-100 dark:border-slate-500 rounded-lg p-1.5 bg-white dark:bg-slate-800 dark:text-white text-sm font-bold" value=${yKey} onChange=${e => setYKey(e.target.value)} disabled=${mode === 'extra'}>
-                                        ${dataset.columns.map(c => html`<option key=${c.key} value=${c.key}>${c.label}</option>`)}
-                                    </select>
-                                </div>
-                            </div>
-                        </${Card}>
-                    </aside>
-                    <section class="flex-1 flex flex-col min-w-0">
-                        <${Card} className="h-full shadow-md border-gray-200">
-                            <div class="h-full flex flex-col">
-                                <div class="flex justify-between items-center mb-2 px-1">
-                                    <h2 class="text-sm font-black text-gray-800 dark:text-slate-100"><span class="text-blue-500 dark:text-blue-400">${xColumn.label}</span> vs <span class="text-green-500 dark:text-green-400">${yColumn.label}</span></h2>
-                                    <div class="flex gap-2 text-[8px] font-black text-gray-400 dark:text-slate-500 uppercase">
-                                        <div class="flex items-center gap-1"><div class="w-2 h-2 bg-indigo-500 rounded"></div> データ</div>
-                                        <div class="flex items-center gap-1"><div class="w-2 h-2 bg-orange-500 rounded-full"></div> 回帰</div>
-                                    </div>
-                                </div>
-                                <div class="flex-1"><${ScatterVis} data=${dataset.data} xConfig=${xColumn} yConfig=${yColumn} regression=${stats.regression} excludedIds=${excludedIds} onTogglePoint=${togglePoint} visualMode=${visualMode} isDark=${isDark} /></div>
-                            </div>
-                        </${Card}>
-                    </section>
-                    <aside class="w-full lg:w-64 flex-shrink-0">
-                        <${Card} title="統計結果" className="h-full">
-                            <${AnalysisPanel} xLabel=${xColumn.label} yLabel=${yColumn.label} correlation=${stats.correlation} regression=${stats.regression} strength=${stats.strength} activeCount=${stats.activeCount} totalCount=${dataset.data.length} />
-                        </${Card}>
-                    </aside>
-                    
-                    ${mode === 'drill' && !showClearModal && html`<${DrillQuestWindow} quest=${DRILL_QUESTS[currentQuestIndex]} index=${currentQuestIndex} total=${DRILL_QUESTS.length} feedback=${drillFeedback} onSubmit=${handleDrillSubmit} onNext=${nextQuest} hasCleared=${hasCleared} onRestart=${restartDrill} />`}
-                    ${mode === 'extra' && html`<${ExtraMissionWindow} correlation=${stats.correlation} activeCount=${stats.activeCount} stage=${extraMissionLevel} totalStages=${EXTRA_MISSION_STAGES.length} targetR=${EXTRA_MISSION_STAGES[extraMissionLevel].targetR} targetIds=${EXTRA_MISSION_STAGES[extraMissionLevel].targetIds} missionType=${EXTRA_MISSION_STAGES[extraMissionLevel].type} excludedIds=${excludedIds} onNext=${nextExtraMission} onComplete=${finishExtraMission} />`}
-                </main>
-            `}
+            ${renderMainContent()}
 
             ${showDataWindow && html`<${FloatingDataWindow} data=${dataset.data} columns=${dataset.columns} excludedIds=${excludedIds} onTogglePoint=${togglePoint} onClose=${() => setShowDataWindow(false)} visualMode=${visualMode} isDark=${isDark} />`}
             ${showClearModal && html`<${DrillClearModal} onRestart=${restartDrill} onExploration=${() => {setShowClearModal(false); setMode('exploration');}} onExtraMission=${startExtraMission} />`}
