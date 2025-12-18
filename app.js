@@ -372,12 +372,18 @@ const TutorialMode = ({ onFinish }) => {
                 <div class="flex flex-col items-center h-full animate-fade-in-up py-2 max-w-5xl mx-auto w-full overflow-hidden">
                     
                     <!-- Intro Cards -->
-                    <div class="space-y-2 w-full mb-3 shrink-0">
+                    <div class="w-full mb-3 shrink-0 grid grid-cols-1 md:grid-cols-2 gap-2">
                          <div class="bg-blue-50 dark:bg-slate-700/50 p-3 rounded-xl border-l-4 border-blue-500 shadow-sm">
                             <h3 class="font-black text-blue-900 dark:text-blue-200 mb-1 ${tc('text-base')} md:${tc('text-lg')}">💡 因果関係（いんがかんけい）</h3>
-                            <p class="${tc('text-sm')} text-gray-700 dark:text-slate-300">
-                                「Aが原因でBが起きた」という関係。<br/>
+                            <p class="${tc('text-sm')} text-gray-700 dark:text-slate-300 leading-snug">
+                                「Aが原因でBが起きた」という直接的な関係。<br/>
                                 <span class="font-bold text-red-600 dark:text-red-400">重要：相関があっても因果があるとは限らない！</span>
+                            </p>
+                        </div>
+                         <div class="bg-yellow-50 dark:bg-slate-700/50 p-3 rounded-xl border-l-4 border-yellow-500 shadow-sm">
+                            <h3 class="font-black text-yellow-900 dark:text-yellow-200 mb-1 ${tc('text-base')} md:${tc('text-lg')}">⚠️ 疑似相関（ぎじそうかん）</h3>
+                            <p class="${tc('text-sm')} text-gray-700 dark:text-slate-300 leading-snug">
+                                本当は無関係なのに、別の隠れた要因（潜伏変数）の影響で、<span class="font-bold text-yellow-700 dark:text-yellow-400">あたかも関係があるように見えてしまう</span>現象。
                             </p>
                         </div>
                     </div>
