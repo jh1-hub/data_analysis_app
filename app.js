@@ -393,7 +393,9 @@ const TutorialMode = ({ onFinish }) => {
                                 <!-- Common Cause -->
                                 <div class="absolute top-0 left-1/2 transform -translate-x-1/2 text-center z-10">
                                     <div class="text-5xl animate-bounce-slow">☀️</div>
-                                    <div class="text-xs font-bold bg-yellow-100 dark:bg-yellow-800 dark:text-white px-3 py-1 rounded-full">気温が高い</div>
+                                    <div class="text-xs font-bold bg-yellow-100 dark:bg-yellow-800 dark:text-white px-3 py-1 rounded-full">
+                                        気温が高い<br/>
+                                    </div>
                                 </div>
                                 <!-- Arrows -->
                                 <svg class="absolute inset-0 w-full h-full text-indigo-300" viewBox="0 0 400 160" preserveAspectRatio="none" overflow="visible">
@@ -421,6 +423,10 @@ const TutorialMode = ({ onFinish }) => {
                                 「暑い」という共通の原因によって、どちらも増えただけです。<br/>
                                 これを<span class="text-indigo-600 dark:text-indigo-400 font-bold text-lg">疑似相関（ぎじそうかん）</span>といいます。
                             </p>
+                             <div class="mt-3 bg-indigo-50 dark:bg-slate-700 p-2 rounded-lg text-xs text-gray-600 dark:text-slate-400 text-center">
+                                💡 この「隠れた共通の原因（ここでは気温）」のことを<br/>
+                                専門用語で<span class="font-bold text-indigo-700 dark:text-indigo-300">交絡因子（こうらくいんし）</span>と呼びます。
+                            </div>
                         </div>
                     </div>
                 </div>
