@@ -112,6 +112,17 @@ const TutorialMode = ({ onFinish }) => {
     
     // State for Step 1 Demo Switching
     const [demoType, setDemoType] = useState('positive'); // 'positive' | 'negative'
+
+    // State for Step 3 Interactive Task
+    const [step3R, setStep3R] = useState(0);
+    const [step3Cleared, setStep3Cleared] = useState(false);
+    // Generate static random points for Step 3 interaction to avoid flickering
+    const step3Points = useMemo(() => {
+        return Array.from({ length: 40 }, () => ({
+            x: Math.random() * 2 - 1, // -1 to 1
+            noiseY: Math.random() * 2 - 1,
+        }));
+    }, []);
     
     // State for Step 5 Mobile Toggle
     const [step5ShowTruth, setStep5ShowTruth] = useState(false);
@@ -182,6 +193,27 @@ const TutorialMode = ({ onFinish }) => {
             ${[{x:20,y:18},{x:35,y:25},{x:45,y:40},{x:58,y:45},{x:70,y:55},{x:82,y:62}].map((p, i) => html`<circle key=${i} cx=${p.x} cy=${p.y} r="2" fill="#10b981" />`)}
         </svg>
     `;
+
+    // Step 3 Dynamic Plot
+    const renderDynamicScatter = () => {
+        return html`
+            <svg viewBox="0 0 200 120" class="w-full h-full overflow-visible bg-white dark:bg-slate-800 rounded border border-gray-200 dark:border-slate-600 shadow-inner">
+                <line x1="10" y1="110" x2="190" y2="110" stroke="#cbd5e1" stroke-width="1"/>
+                <line x1="10" y1="10" x2="10" y2="110" stroke="#cbd5e1" stroke-width="1"/>
+                ${step3Points.map((p, i) => {
+                    const r = step3R;
+                    // Visualize correlation: mix linear relation with noise
+                    const simY = r * p.x + (1 - Math.abs(r)) * p.noiseY * 0.7; 
+                    
+                    const plotX = 100 + p.x * 80;
+                    const plotY = 60 - simY * 45; // Invert Y and Scale
+                    
+                    return html`<circle key=${i} cx=${plotX} cy=${plotY} r="3" fill="#6366f1" opacity="0.6" />`;
+                })}
+                <text x="190" y="20" font-size="16" fill="#6366f1" font-weight="bold" opacity="0.8" text-anchor="end">r = ${step3R.toFixed(1)}</text>
+            </svg>
+        `;
+    };
 
     const pages = [
         {
@@ -340,7 +372,7 @@ const TutorialMode = ({ onFinish }) => {
         {
             title: "ステップ3：相関係数（r）",
             content: html`
-                <div class="flex flex-col items-center justify-center h-full space-y-4 animate-fade-in-up py-4 max-w-4xl mx-auto">
+                <div class="flex flex-col items-center justify-center h-full space-y-2 animate-fade-in-up py-4 max-w-4xl mx-auto w-full">
                     <div class="bg-indigo-50 dark:bg-slate-700/50 p-4 rounded-2xl border border-indigo-100 dark:border-slate-600 w-full shrink-0">
                         <h3 class="${tc('text-lg')} md:${tc('text-2xl')} font-black text-indigo-800 dark:text-indigo-300 mb-2 md:mb-4 text-center">相関の「強さ」を数値化する</h3>
                         <p class="${tc('text-sm')} md:${tc('text-lg')} text-gray-700 dark:text-slate-300 leading-relaxed mb-4 md:mb-6">
@@ -360,7 +392,51 @@ const TutorialMode = ({ onFinish }) => {
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
+                    <!-- Interactive Slider Task -->
+                    <div class="w-full bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl border border-yellow-200 dark:border-yellow-700 flex flex-col md:flex-row items-center gap-6">
+                        <div class="w-full md:w-1/2 aspect-video bg-white dark:bg-slate-800 rounded-lg">
+                            ${renderDynamicScatter()}
+                        </div>
+                        <div class="w-full md:w-1/2 flex flex-col gap-4 text-center">
+                            <div>
+                                <h4 class="font-bold text-gray-800 dark:text-white mb-2 ${tc('text-sm')} md:${tc('text-base')}">
+                                    <span class="text-xl mr-2">🎚️</span>
+                                    スライダーを動かして形を確認しよう
+                                </h4>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-mono">-1.0</span>
+                                    <input type="range" min="-1" max="1" step="0.1" value=${step3R} 
+                                        onChange=${(e) => {
+                                            const val = parseFloat(e.target.value);
+                                            setStep3R(val);
+                                            if (Math.abs(val - 0.8) < 0.15) {
+                                                setStep3Cleared(true);
+                                            }
+                                        }}
+                                        class="flex-1 h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                                    <span class="text-xs font-mono">1.0</span>
+                                </div>
+                                <div class="mt-2 font-mono font-bold text-xl text-indigo-600 dark:text-indigo-400">r = ${step3R.toFixed(1)}</div>
+                            </div>
+
+                            <div class="bg-white dark:bg-slate-800 p-3 rounded-lg border-2 ${step3Cleared ? 'border-green-400 bg-green-50 dark:bg-green-900/30' : 'border-indigo-100'} transition-all">
+                                <p class="${tc('text-xs')} font-bold text-gray-500 dark:text-slate-400 mb-1">【ミッション】</p>
+                                ${step3Cleared ? html`
+                                    <div class="animate-bounce-slow">
+                                        <p class="${tc('text-base')} font-black text-green-600 dark:text-green-400">正解！🎉</p>
+                                        <p class="${tc('text-xs')} text-green-700 dark:text-green-300">「強い正の相関」が作れました。<br/>下にスクロールして次へ進めます。</p>
+                                    </div>
+                                ` : html`
+                                    <p class="${tc('text-sm')} font-bold text-gray-800 dark:text-slate-200">
+                                        スライダーを動かして<br/>
+                                        <span class="text-red-500 text-lg">r = 0.8</span> に合わせてください！
+                                    </p>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full opacity-80 hover:opacity-100 transition-opacity">
                         <div class="p-3 md:p-4 bg-white dark:bg-slate-800 border dark:border-slate-700 rounded-xl shadow-sm flex items-center gap-4">
                              <div class="w-16 md:w-24 shrink-0 opacity-80">${NegativeCorrelationSVG}</div>
                             <div>
@@ -538,14 +614,18 @@ const TutorialMode = ({ onFinish }) => {
 
     const current = pages[step];
     
-    // Step 1 check logic
+    // Step Check Logic
     const canProceed = useMemo(() => {
         if (step === 1) {
             // ステップ1は、negativeのプロットも終わらないと進めない
             return demoType === 'negative' && plotStep >= 3;
         }
+        if (step === 3) {
+            // ステップ3は、スライダータスクをクリアしないと進めない
+            return step3Cleared;
+        }
         return true;
-    }, [step, plotStep, demoType]);
+    }, [step, plotStep, demoType, step3Cleared]);
 
     return html`
         <div class="flex-1 flex flex-col min-h-0 p-2 md:p-3 xl:max-w-6xl mx-auto w-full">
