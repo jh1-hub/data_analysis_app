@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import htm from 'htm';
 import { ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Cell, Line } from 'recharts';
 import * as MathUtils from '../utils/math.js';
@@ -68,6 +68,19 @@ export const MasterMode = ({ onExit }) => {
         }
     }, [phase]);
 
+    // Regression line memoization
+    const regressionLine = useMemo(() => {
+        if (!currentData) return null;
+        const { slope, intercept } = MathUtils.calculateRegression(
+            currentData.data.map(d => d.x), 
+            currentData.data.map(d => d.y)
+        );
+        return [
+            { x: 0, y: MathUtils.predictY(0, slope, intercept) },
+            { x: 100, y: MathUtils.predictY(100, slope, intercept) }
+        ];
+    }, [currentData]);
+
     const calculatePoints = (correctR, guessR) => {
         const diff = Math.abs(correctR - guessR);
         return Math.max(0, Math.round((1 - (diff * 2)) * 100));
@@ -132,9 +145,9 @@ export const MasterMode = ({ onExit }) => {
                             <${Scatter} data=${currentData.data} fill="#8884d8">
                                 ${currentData.data.map((entry, index) => html`<${Cell} key=${index} fill="#6366f1" />`)}
                             </${Scatter}>
-                            ${(phase === 'result' || phase === 'practice_result') && html`
+                            ${(phase === 'result' || phase === 'practice_result') && regressionLine && html`
                                 <${Line} 
-                                    data=${[{ x: 0, y: MathUtils.predictY(0, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).slope, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).intercept) }, { x: 100, y: MathUtils.predictY(100, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).slope, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).intercept) }]} 
+                                    data=${regressionLine} 
                                     dataKey="y" stroke="#f97316" strokeWidth=${3} dot=${false} isAnimationActive=${true}
                                 />
                             `}
