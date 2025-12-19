@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { DATASETS, DRILL_QUESTS } from './utils/data.js';
 import * as MathUtils from './utils/math.js';
+import { LectureMode } from './LectureMode.js';
 
 const html = htm.bind(React.createElement);
 
@@ -705,7 +706,7 @@ const ExtraMissionMode = ({ stageConfig, onExit }) => {
  * Main App Component
  */
 const App = () => {
-    const [mode, setMode] = useState('menu'); // menu, drill, sandbox, master, extra
+    const [mode, setMode] = useState('menu'); // menu, drill, sandbox, master, extra, lecture
     const [extraStageIndex, setExtraStageIndex] = useState(0);
 
     const startExtraMission = (index) => {
@@ -726,6 +727,23 @@ const App = () => {
                     </header>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Lecture Mode (New!) -->
+                        <div 
+                            onClick=${() => setMode('lecture')}
+                            class="group bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6 cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden relative md:col-span-2"
+                        >
+                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-8xl">📝</div>
+                            <div class="relative z-10">
+                                <div class="bg-indigo-100 text-indigo-700 inline-block px-3 py-1 rounded-full text-xs font-black mb-3">LECTURE</div>
+                                <h2 class="text-2xl font-black text-gray-800 dark:text-white mb-2">デジタルワークシート (解説)</h2>
+                                <p class="text-sm text-gray-500 dark:text-slate-400 mb-4">
+                                    授業プリント形式で「相関・回帰分析」の基礎知識を学びます。
+                                    穴埋め問題や、疑似相関の図解が含まれています。
+                                </p>
+                                <span class="text-indigo-600 font-bold text-sm flex items-center group-hover:gap-2 transition-all">OPEN <span class="ml-1">→</span></span>
+                            </div>
+                        </div>
+
                         <!-- Drill Mode -->
                         <div 
                             onClick=${() => setMode('drill')}
@@ -807,6 +825,7 @@ const App = () => {
     if (mode === 'sandbox') return html`<${SandboxMode} onExit=${() => setMode('menu')} />`;
     if (mode === 'master') return html`<${MasterMode} onExit=${() => setMode('menu')} />`;
     if (mode === 'extra') return html`<${ExtraMissionMode} stageConfig=${EXTRA_MISSION_STAGES[extraStageIndex]} onExit=${() => setMode('menu')} />`;
+    if (mode === 'lecture') return html`<${LectureMode} onExit=${() => setMode('menu')} />`;
 
     return null;
 };
