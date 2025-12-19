@@ -104,17 +104,19 @@ const Card = ({ title, children, className = "" }) => html`
 /**
  * 相関マスターモード (MasterMode)
  * ランダムに生成された散布図の相関係数を当てるゲーム
+ * チュートリアル -> 練習 -> 本番 のフロー
  */
 const MasterMode = ({ onExit }) => {
+    // phase: 'intro' (説明), 'practice' (練習問題), 'practice_result' (練習結果), 'game_start' (本番開始), 'playing' (回答中), 'result' (結果), 'finished' (最終スコア)
+    const [phase, setPhase] = useState('intro');
     const [round, setRound] = useState(1);
     const [score, setScore] = useState(0);
-    const [gameState, setGameState] = useState('playing'); // 'playing', 'result', 'finished'
     const [currentData, setCurrentData] = useState(null);
     const [userGuess, setUserGuess] = useState(0);
     const [history, setHistory] = useState([]);
     const TOTAL_ROUNDS = 10;
 
-    // データ生成ロジック
+    // データ生成ロジック（詳細な統計量も計算して返す）
     const generateData = () => {
         const count = 30;
         // ランダムな相関パターンを生成
@@ -141,37 +143,68 @@ const MasterMode = ({ onExit }) => {
             data.push({ id: i, x, y });
         }
         
-        // 正解のRを計算
-        const xArr = data.map(d => d.x);
-        const yArr = data.map(d => d.y);
-        const r = MathUtils.calculateCorrelation(xArr, yArr);
+        // 統計量の計算
+        const n = data.length;
+        const meanX = data.reduce((a, b) => a + b.x, 0) / n;
+        const meanY = data.reduce((a, b) => a + b.y, 0) / n;
+        let sumXY = 0, sumXX = 0, sumYY = 0;
+        data.forEach(p => {
+            sumXY += (p.x - meanX) * (p.y - meanY);
+            sumXX += (p.x - meanX) ** 2;
+            sumYY += (p.y - meanY) ** 2;
+        });
+        
+        const covariance = sumXY / n; // 共分散
+        const stdDevX = Math.sqrt(sumXX / n); // Xの標準偏差
+        const stdDevY = Math.sqrt(sumYY / n); // Yの標準偏差
+        const r = denominator(stdDevX * stdDevY) === 0 ? 0 : covariance / (stdDevX * stdDevY);
 
-        return { data, r };
+        return { 
+            data, 
+            r, 
+            stats: { meanX, meanY, covariance, stdDevX, stdDevY } 
+        };
     };
 
+    const denominator = (val) => val === 0 ? 1 : val; // ゼロ除算防止
+
     useEffect(() => {
-        setCurrentData(generateData());
-        setUserGuess(0);
-    }, []);
+        if (phase === 'practice' || phase === 'game_start') {
+            setCurrentData(generateData());
+            setUserGuess(0);
+            if (phase === 'game_start') setPhase('playing');
+        }
+    }, [phase]);
 
     const handleSubmit = () => {
         const diff = Math.abs(currentData.r - userGuess);
         // スコア計算: 誤差0で100点、誤差0.5以上で0点
         const points = Math.max(0, Math.round((1 - (diff * 2)) * 100));
         
-        setScore(prev => prev + points);
-        setHistory(prev => [...prev, { round, r: currentData.r, guess: userGuess, points }]);
-        setGameState('result');
+        if (phase === 'practice') {
+            setPhase('practice_result');
+        } else {
+            setScore(prev => prev + points);
+            setHistory(prev => [...prev, { round, r: currentData.r, guess: userGuess, points }]);
+            setPhase('result');
+        }
     };
 
     const handleNext = () => {
-        if (round >= TOTAL_ROUNDS) {
-            setGameState('finished');
-        } else {
-            setRound(prev => prev + 1);
-            setCurrentData(generateData());
-            setUserGuess(0);
-            setGameState('playing');
+        if (phase === 'practice_result') {
+            setRound(1);
+            setScore(0);
+            setHistory([]);
+            setPhase('game_start');
+        } else if (phase === 'result') {
+            if (round >= TOTAL_ROUNDS) {
+                setPhase('finished');
+            } else {
+                setRound(prev => prev + 1);
+                setCurrentData(generateData());
+                setUserGuess(0);
+                setPhase('playing');
+            }
         }
     };
 
@@ -179,17 +212,181 @@ const MasterMode = ({ onExit }) => {
         setRound(1);
         setScore(0);
         setHistory([]);
-        setCurrentData(generateData());
-        setUserGuess(0);
-        setGameState('playing');
+        setPhase('game_start');
     };
 
-    // 散布図の表示設定（軸などを隠してシンプルにする）
-    const scatterConfig = {
-        key: 'temp', label: '', type: 'number'
-    };
+    // 共通のゲーム画面レンダリング
+    const renderGameScreen = (isPractice) => html`
+        <div class="h-full flex flex-col p-2 md:p-4 max-w-4xl mx-auto w-full animate-fade-in-up">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-4 bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
+                <div class="font-black text-xl text-gray-800 dark:text-white flex items-center gap-2">
+                    ${isPractice ? html`
+                        <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-sm">PRACTICE</span>
+                        <span>練習問題</span>
+                    ` : html`
+                        <span class="text-indigo-500 mr-2">ROUND</span>
+                        ${round} <span class="text-sm text-gray-400">/ ${TOTAL_ROUNDS}</span>
+                    `}
+                </div>
+                ${!isPractice && html`
+                    <div class="font-black text-xl text-gray-800 dark:text-white">
+                        SCORE: <span class="text-indigo-600 dark:text-indigo-400">${score}</span>
+                    </div>
+                `}
+            </div>
 
-    if (gameState === 'finished') {
+            <!-- Scatter Plot Area -->
+            <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-inner border border-gray-200 dark:border-slate-700 p-2 md:p-6 mb-4 relative overflow-hidden flex flex-col justify-center">
+                 <div class="absolute top-2 left-2 text-xs font-bold text-gray-300 dark:text-slate-600">X: Variable A</div>
+                 <div class="absolute bottom-2 right-2 text-xs font-bold text-gray-300 dark:text-slate-600">Y: Variable B</div>
+                 ${currentData && html`
+                    <${ResponsiveContainer} width="100%" height="100%">
+                        <${ScatterChart} margin=${{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                            <${CartesianGrid} strokeDasharray="3 3" opacity=${0.3} />
+                            <${XAxis} type="number" dataKey="x" hide domain=${['auto', 'auto']} />
+                            <${YAxis} type="number" dataKey="y" hide domain=${['auto', 'auto']} />
+                            <${Scatter} data=${currentData.data} fill="#8884d8">
+                                ${currentData.data.map((entry, index) => html`
+                                    <${Cell} key=${index} fill="#6366f1" />
+                                `)}
+                            </${Scatter}>
+                            ${(phase === 'result' || phase === 'practice_result') && html`
+                                <!-- 回帰直線の表示 -->
+                                <${Line} 
+                                    data=${[
+                                        { x: 0, y: MathUtils.predictY(0, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).slope, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).intercept) },
+                                        { x: 100, y: MathUtils.predictY(100, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).slope, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).intercept) }
+                                    ]} 
+                                    dataKey="y" stroke="#f97316" strokeWidth=${3} dot=${false} 
+                                    isAnimationActive=${true}
+                                />
+                            `}
+                        </${ScatterChart}>
+                    </${ResponsiveContainer}>
+                 `}
+                 
+                 ${(phase === 'result' || phase === 'practice_result') && html`
+                    <div class="absolute inset-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm flex flex-col items-center justify-center animate-fade-in-up z-10 p-4 overflow-y-auto">
+                        <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-2xl border-4 border-indigo-500 w-full max-w-lg text-center">
+                            <div class="text-sm font-bold text-gray-500 dark:text-slate-400 mb-1">正解 (r)</div>
+                            <div class="text-5xl font-black text-indigo-600 dark:text-indigo-400 mb-6 font-mono">${currentData.r.toFixed(2)}</div>
+                            
+                            <div class="flex justify-between gap-4 text-sm border-b dark:border-slate-700 pb-4 mb-4">
+                                <div class="flex-1">
+                                    <div class="font-bold text-gray-400 text-xs">あなたの予想</div>
+                                    <div class="font-mono font-bold text-xl text-gray-800 dark:text-white">${userGuess.toFixed(2)}</div>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="font-bold text-gray-400 text-xs">誤差</div>
+                                    <div class="font-mono font-bold text-xl text-red-500">${Math.abs(currentData.r - userGuess).toFixed(2)}</div>
+                                </div>
+                                ${!isPractice && html`
+                                    <div class="flex-1">
+                                        <div class="font-bold text-gray-400 text-xs">獲得ポイント</div>
+                                        <div class="font-bold text-xl text-orange-500">+${Math.max(0, Math.round((1 - (Math.abs(currentData.r - userGuess) * 2)) * 100))}</div>
+                                    </div>
+                                `}
+                            </div>
+
+                            <!-- 計算式の提示 -->
+                            <div class="bg-gray-50 dark:bg-slate-700/50 p-3 rounded-lg text-left mb-6">
+                                <div class="text-xs font-bold text-gray-500 dark:text-slate-400 mb-2 border-b dark:border-slate-600 pb-1">🧮 相関係数の計算式</div>
+                                <div class="flex items-center justify-center gap-3 text-sm md:text-base font-mono text-gray-800 dark:text-slate-200 py-2 overflow-x-auto">
+                                    <span class="font-bold italic">r</span>
+                                    <span>=</span>
+                                    <div class="flex flex-col items-center text-center">
+                                        <div class="border-b border-gray-400 dark:border-slate-500 px-2 pb-0.5 mb-0.5 text-xs text-gray-500 dark:text-slate-400">共分散 (S<sub>xy</sub>)</div>
+                                        <div class="font-bold">${currentData.stats.covariance.toFixed(1)}</div>
+                                    </div>
+                                    <span>÷</span>
+                                    <div class="flex flex-col items-center">
+                                        <div class="border-b border-gray-400 dark:border-slate-500 px-2 pb-0.5 mb-0.5 text-xs text-gray-500 dark:text-slate-400">標準偏差の積 (S<sub>x</sub> × S<sub>y</sub>)</div>
+                                        <div class="flex gap-1 items-center font-bold">
+                                            <span>${currentData.stats.stdDevX.toFixed(1)}</span>
+                                            <span class="text-xs">×</span>
+                                            <span>${currentData.stats.stdDevY.toFixed(1)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-[10px] text-gray-400 mt-2 text-center">※実際のデータに基づいた計算結果です</p>
+                            </div>
+
+                            <button onClick=${handleNext} class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-indigo-700 active:scale-95 transition-all">
+                                ${isPractice ? '本番スタート！ 🔥' : (round >= TOTAL_ROUNDS ? '最終結果を見る 🏆' : '次の問題へ ➡')}
+                            </button>
+                        </div>
+                    </div>
+                 `}
+            </div>
+
+            <!-- Input Area -->
+            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-lg border border-gray-100 dark:border-slate-700">
+                <div class="flex flex-col gap-4">
+                    <div class="flex justify-between items-center px-2">
+                        <div class="text-center">
+                            <span class="font-mono text-gray-400 font-bold block text-xs">完全な負</span>
+                            <span class="font-mono text-gray-500 font-bold">-1.00</span>
+                        </div>
+                        <span class="text-4xl font-black text-indigo-600 dark:text-indigo-400 font-mono tracking-wider w-32 text-center bg-gray-50 dark:bg-slate-900 rounded-lg py-1 border dark:border-slate-700 shadow-inner">
+                            ${userGuess.toFixed(2)}
+                        </span>
+                        <div class="text-center">
+                            <span class="font-mono text-gray-400 font-bold block text-xs">完全な正</span>
+                            <span class="font-mono text-gray-500 font-bold">1.00</span>
+                        </div>
+                    </div>
+                    <input type="range" min="-1" max="1" step="0.01" value=${userGuess} 
+                        onInput=${(e) => setUserGuess(parseFloat(e.target.value))}
+                        disabled=${phase === 'result' || phase === 'practice_result'}
+                        class="w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
+                    
+                    <button onClick=${handleSubmit} disabled=${phase === 'result' || phase === 'practice_result'}
+                        class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-xl shadow-md hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        決定
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // チュートリアル画面
+    if (phase === 'intro') {
+        return html`
+            <div class="h-full flex flex-col items-center justify-center p-4 animate-fade-in-up bg-indigo-50 dark:bg-slate-900">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 max-w-lg w-full text-center border-2 border-indigo-200">
+                    <div class="text-6xl mb-4 animate-bounce-slow">👑</div>
+                    <h2 class="text-3xl font-black text-indigo-800 dark:text-indigo-300 mb-2">相関マスターモード</h2>
+                    <p class="text-gray-600 dark:text-slate-400 mb-6 font-bold text-sm">
+                        これは「データ探偵」の最終試験です。<br/>
+                        ランダムに表示される散布図を見て、<br/>
+                        その<span class="text-indigo-600 dark:text-indigo-400 font-black text-lg">相関係数（r）</span>を目視で当ててください！
+                    </p>
+                    
+                    <div class="bg-gray-50 dark:bg-slate-700 rounded-lg p-4 mb-6 text-left space-y-2 text-sm border border-gray-200 dark:border-slate-600">
+                        <div class="flex items-start gap-2">
+                            <span class="text-xl">🎯</span>
+                            <div><span class="font-bold">ルール：</span>全10問のスコアアタック形式</div>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="text-xl">📏</span>
+                            <div><span class="font-bold">操作：</span>スライダーを動かして数値を予想</div>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="text-xl">💯</span>
+                            <div><span class="font-bold">得点：</span>正解に近いほど高得点（誤差0.5以上は0点）</div>
+                        </div>
+                    </div>
+
+                    <button onClick=${() => setPhase('practice')} class="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl font-bold text-xl shadow-lg hover:scale-105 transition-all">
+                        練習問題へ進む ➡
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    if (phase === 'finished') {
         const getRank = (s) => {
             if (s >= 900) return "S (神の目)";
             if (s >= 800) return "A (データマスター)";
@@ -234,92 +431,7 @@ const MasterMode = ({ onExit }) => {
         `;
     }
 
-    return html`
-        <div class="h-full flex flex-col p-2 md:p-4 max-w-4xl mx-auto w-full">
-            <div class="flex justify-between items-center mb-4 bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-gray-100 dark:border-slate-700">
-                <div class="font-black text-xl text-gray-800 dark:text-white">
-                    <span class="text-indigo-500 mr-2">ROUND</span>
-                    ${round} <span class="text-sm text-gray-400">/ ${TOTAL_ROUNDS}</span>
-                </div>
-                <div class="font-black text-xl text-gray-800 dark:text-white">
-                    SCORE: <span class="text-indigo-600 dark:text-indigo-400">${score}</span>
-                </div>
-            </div>
-
-            <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-inner border border-gray-200 dark:border-slate-700 p-2 md:p-6 mb-4 relative overflow-hidden flex flex-col justify-center">
-                 <div class="absolute top-2 left-2 text-xs font-bold text-gray-300 dark:text-slate-600">X: Variable A</div>
-                 <div class="absolute bottom-2 right-2 text-xs font-bold text-gray-300 dark:text-slate-600">Y: Variable B</div>
-                 ${currentData && html`
-                    <${ResponsiveContainer} width="100%" height="100%">
-                        <${ScatterChart} margin=${{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                            <${CartesianGrid} strokeDasharray="3 3" opacity=${0.3} />
-                            <${XAxis} type="number" dataKey="x" hide domain=${['auto', 'auto']} />
-                            <${YAxis} type="number" dataKey="y" hide domain=${['auto', 'auto']} />
-                            <${Scatter} data=${currentData.data} fill="#8884d8">
-                                ${currentData.data.map((entry, index) => html`
-                                    <${Cell} key=${index} fill="#6366f1" />
-                                `)}
-                            </${Scatter}>
-                            ${gameState === 'result' && html`
-                                <!-- Show Regression Line on Result -->
-                                <${Line} 
-                                    data=${[
-                                        { x: 0, y: MathUtils.predictY(0, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).slope, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).intercept) },
-                                        { x: 100, y: MathUtils.predictY(100, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).slope, MathUtils.calculateRegression(currentData.data.map(d=>d.x), currentData.data.map(d=>d.y)).intercept) }
-                                    ]} 
-                                    dataKey="y" stroke="#f97316" strokeWidth=${3} dot=${false} 
-                                />
-                            `}
-                        </${ScatterChart}>
-                    </${ResponsiveContainer}>
-                 `}
-                 
-                 ${gameState === 'result' && html`
-                    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center animate-fade-in-up z-10">
-                        <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-2xl text-center border-4 border-indigo-500 transform scale-110">
-                            <div class="text-sm font-bold text-gray-500 dark:text-slate-400 mb-1">正解</div>
-                            <div class="text-5xl font-black text-indigo-600 dark:text-indigo-400 mb-4 font-mono">${currentData.r.toFixed(2)}</div>
-                            <div class="flex justify-between gap-8 text-sm border-t dark:border-slate-700 pt-3">
-                                <div>
-                                    <div class="font-bold text-gray-400">予想</div>
-                                    <div class="font-mono font-bold text-gray-800 dark:text-white">${userGuess.toFixed(2)}</div>
-                                </div>
-                                <div>
-                                    <div class="font-bold text-gray-400">誤差</div>
-                                    <div class="font-mono font-bold text-red-500">${Math.abs(currentData.r - userGuess).toFixed(2)}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                 `}
-            </div>
-
-            <div class="bg-white dark:bg-slate-800 p-4 rounded-xl shadow-lg border border-gray-100 dark:border-slate-700">
-                ${gameState === 'playing' ? html`
-                    <div class="flex flex-col gap-4">
-                        <div class="flex justify-between items-center px-2">
-                            <span class="font-mono text-gray-400 font-bold">-1.00</span>
-                            <span class="text-4xl font-black text-indigo-600 dark:text-indigo-400 font-mono tracking-wider w-32 text-center bg-gray-50 dark:bg-slate-900 rounded-lg py-1 border dark:border-slate-700">
-                                ${userGuess.toFixed(2)}
-                            </span>
-                            <span class="font-mono text-gray-400 font-bold">1.00</span>
-                        </div>
-                        <input type="range" min="-1" max="1" step="0.01" value=${userGuess} 
-                            onInput=${(e) => setUserGuess(parseFloat(e.target.value))}
-                            class="w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600" />
-                        
-                        <button onClick=${handleSubmit} class="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-xl shadow-md hover:bg-indigo-700 active:scale-95 transition-all">
-                            決定
-                        </button>
-                    </div>
-                ` : html`
-                    <button onClick=${handleNext} class="w-full py-4 bg-orange-500 text-white rounded-xl font-bold text-xl shadow-md hover:bg-orange-600 active:scale-95 transition-all animate-pulse">
-                        次へ進む ➡
-                    </button>
-                `}
-            </div>
-        </div>
-    `;
+    return renderGameScreen(phase === 'practice' || phase === 'practice_result');
 };
 
 
@@ -334,6 +446,7 @@ const TutorialMode = ({ onFinish }) => {
     
     // State for Step 1 Demo Switching
     const [demoType, setDemoType] = useState('positive'); // 'positive' | 'negative'
+    const [nextButtonDisabled, setNextButtonDisabled] = useState(false); // For delay
 
     // State for Step 3 Interactive Task
     const [step3R, setStep3R] = useState(0);
@@ -348,6 +461,15 @@ const TutorialMode = ({ onFinish }) => {
     
     // State for Step 5 Mobile Toggle
     const [step5ShowTruth, setStep5ShowTruth] = useState(false);
+
+    // Step 1: Wait for 1 second before enabling next button
+    useEffect(() => {
+        if (plotStep === 3) {
+            setNextButtonDisabled(true);
+            const timer = setTimeout(() => setNextButtonDisabled(false), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [plotStep]);
 
     // Font Scaling Helper
     const tc = (base) => {
@@ -492,8 +614,9 @@ const TutorialMode = ({ onFinish }) => {
                                 <div class="text-center animate-fade-in-up">
                                     <p class="text-green-600 font-bold mb-2 ${tc('text-sm')}">右上がりの傾向が見えました！</p>
                                     <button onClick=${() => { setDemoType('negative'); setPlotStep(0); }}
-                                        class="w-full px-4 py-3 bg-white border-2 border-indigo-600 text-indigo-600 rounded-xl ${tc('text-base')} font-black hover:bg-indigo-50 shadow-md active:scale-95 transition-all">
-                                        次は「逆のパターン」へ ➡
+                                        disabled=${nextButtonDisabled}
+                                        class="w-full px-4 py-3 bg-white border-2 border-indigo-600 text-indigo-600 rounded-xl ${tc('text-base')} font-black hover:bg-indigo-50 shadow-md active:scale-95 transition-all disabled:opacity-50 disabled:cursor-wait">
+                                        ${nextButtonDisabled ? '考え中...' : '次は「逆のパターン」へ ➡'}
                                     </button>
                                 </div>
                             ` : html`
@@ -1379,7 +1502,7 @@ const App = () => {
     const nextExtraMission = () => { if (extraMissionLevel < EXTRA_MISSION_STAGES.length - 1) { const nextLevel = extraMissionLevel + 1; setExtraMissionLevel(nextLevel); loadExtraMissionLevel(nextLevel); } };
     const finishExtraMission = () => { 
         setIsGameComplete(true);
-        setMode('exploration'); 
+        setMode('master'); 
         setDatasetId(DATASETS[0].id); 
         setExcludedIds([]); 
     };
