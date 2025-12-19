@@ -339,14 +339,9 @@ const DrillMode = ({ onExit }) => {
     const quest = DRILL_QUESTS[questIndex];
     const dataset = DATASETS.find(d => d.id === quest.datasetId);
     
-    // Axes: One is fixed by the quest, the other is user-selectable
     const xKey = quest.initialX;
-    const yKey = quest.initialY; // Initial default, but user changes the non-target one
+    const yKey = quest.initialY; 
     const isTargetX = quest.targetKey === xKey;
-    // If target is X, user changes Y. If target is Y, user changes X.
-    // Wait, "targetKey" is the one fixed in the logic? 
-    // Logic: quest says "Find item correlated with Study Time". Study Time is X. User changes Y.
-    // So if targetKey == initialX, then X is fixed. User selects Y.
     
     const currentX = isTargetX ? quest.targetKey : selectedVar || xKey;
     const currentY = isTargetX ? selectedVar || yKey : quest.targetKey;
@@ -375,30 +370,54 @@ const DrillMode = ({ onExit }) => {
 
     return html`
         <div class="h-full flex flex-col bg-gray-50 dark:bg-slate-900">
+            <!-- Header -->
             <div class="bg-white dark:bg-slate-800 p-4 border-b border-gray-200 dark:border-slate-700 flex justify-between items-center shadow-sm z-10">
                 <div class="flex items-center gap-3">
-                    <div class="bg-blue-600 text-white px-3 py-1 rounded-full font-bold text-sm">QUEST ${quest.id}</div>
-                    <div class="text-xs md:text-sm text-gray-500 dark:text-slate-400 hidden md:block">${quest.text}</div>
+                    <div class="bg-blue-600 text-white px-3 py-1 rounded-full font-bold text-sm shadow">QUEST ${quest.id}</div>
+                    <div class="text-sm font-bold text-gray-700 dark:text-slate-300">データ探偵</div>
                 </div>
                 <button onClick=${onExit} class="text-gray-400 hover:text-gray-600 text-sm font-bold">終了</button>
             </div>
 
             <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
-                <div class="flex-1 p-4 relative flex flex-col">
-                    <div class="bg-blue-50 dark:bg-slate-800/50 p-4 rounded-xl border border-blue-100 dark:border-slate-700 mb-4 shadow-sm">
-                        <div class="font-bold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
-                            <span class="text-xl">🕵️</span> 調査指令
+                <!-- Left Panel: Instruction & Chart -->
+                <div class="flex-1 p-4 overflow-y-auto relative flex flex-col bg-slate-100 dark:bg-slate-900">
+                    <!-- Instruction Card -->
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border-l-4 border-blue-500 dark:border-blue-400 mb-6 shrink-0">
+                        <div class="font-bold text-blue-800 dark:text-blue-300 mb-3 flex items-center gap-2 text-lg">
+                            <span class="text-2xl">📩</span> 依頼内容
                         </div>
-                        <div class="text-sm md:text-base font-bold text-gray-800 dark:text-slate-200 mb-2">${quest.explicitObjective}</div>
-                        <div class="text-xs text-gray-500 dark:text-slate-400 bg-white dark:bg-slate-700 p-2 rounded border border-blue-100 dark:border-slate-600">ヒント: ${quest.hint}</div>
+                        <div class="text-sm md:text-base leading-relaxed text-gray-800 dark:text-slate-200 whitespace-pre-wrap mb-4 font-medium">
+                            ${quest.text}
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg border border-blue-100 dark:border-blue-800/50 flex gap-3 items-start">
+                            <span class="text-2xl">🔎</span>
+                            <div>
+                                <div class="text-xs font-bold text-blue-600 dark:text-blue-300 mb-1">捜査目標</div>
+                                <div class="font-bold text-gray-800 dark:text-white">${quest.explicitObjective}</div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="flex-1 bg-white dark:bg-slate-800 rounded-2xl shadow-inner border border-gray-200 dark:border-slate-700 p-2 md:p-4 relative">
+                    <!-- Chart Area -->
+                    <div class="flex-1 min-h-[300px] bg-white dark:bg-slate-800 rounded-2xl shadow-inner border border-gray-200 dark:border-slate-700 p-4 relative">
                         <${ResponsiveContainer} width="100%" height="100%">
                             <${ScatterChart} margin=${{ top: 20, right: 20, bottom: 40, left: 40 }}>
                                 <${CartesianGrid} strokeDasharray="3 3" opacity=${0.5} />
-                                <${XAxis} type="number" dataKey=${currentX} name=${dataset.columns.find(c=>c.key===currentX)?.label} unit="" label=${{ value: dataset.columns.find(c=>c.key===currentX)?.label, position: 'bottom', offset: 0 }} />
-                                <${YAxis} type="number" dataKey=${currentY} name=${dataset.columns.find(c=>c.key===currentY)?.label} unit="" label=${{ value: dataset.columns.find(c=>c.key===currentY)?.label, angle: -90, position: 'left' }} />
+                                <${XAxis} 
+                                    type="number" 
+                                    dataKey=${currentX} 
+                                    name=${dataset.columns.find(c=>c.key===currentX)?.label} 
+                                    unit="" 
+                                    label=${{ value: dataset.columns.find(c=>c.key===currentX)?.label, position: 'bottom', offset: 0 }} 
+                                />
+                                <${YAxis} 
+                                    type="number" 
+                                    dataKey=${currentY} 
+                                    name=${dataset.columns.find(c=>c.key===currentY)?.label} 
+                                    unit="" 
+                                    label=${{ value: dataset.columns.find(c=>c.key===currentY)?.label, angle: -90, position: 'left' }} 
+                                />
                                 <${Tooltip} cursor=${{ strokeDasharray: '3 3' }} />
                                 <${Scatter} data=${dataset.data} fill="#3b82f6">
                                     ${dataset.data.map((entry, index) => html`<${Cell} key=${index} fill="#3b82f6" />`)}
@@ -414,57 +433,66 @@ const DrillMode = ({ onExit }) => {
                     </div>
                 </div>
 
-                <div class="w-full md:w-80 bg-white dark:bg-slate-800 p-6 border-l border-gray-200 dark:border-slate-700 flex flex-col shadow-lg z-20">
-                    <label class="block text-sm font-bold text-gray-700 dark:text-slate-300 mb-2">比較する項目を選ぼう</label>
-                    <select 
-                        class="w-full p-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg mb-6 text-lg font-bold shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                        value=${selectedVar}
-                        onChange=${e => { setSelectedVar(e.target.value); setShowResult(false); }}
-                        disabled=${showResult && isCorrect}
-                    >
-                        <option value="" disabled>項目を選択...</option>
-                        ${options.map(opt => html`<option key=${opt.key} value=${opt.key}>${opt.label}</option>`)}
-                    </select>
+                <!-- Right Panel: Controls & Feedback -->
+                <div class="w-full md:w-80 bg-white dark:bg-slate-800 p-6 border-l border-gray-200 dark:border-slate-700 flex flex-col shadow-xl z-20">
+                    
+                    <div class="mb-6">
+                        <label class="block text-xs font-bold text-gray-400 dark:text-slate-500 uppercase mb-2">
+                            ${isTargetX ? '比較対象 (Y軸)' : '比較対象 (X軸)'} を変更
+                        </label>
+                        <select 
+                            class="w-full p-3 bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl text-lg font-bold shadow-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all hover:bg-white"
+                            value=${selectedVar}
+                            onChange=${e => { setSelectedVar(e.target.value); setShowResult(false); }}
+                            disabled=${showResult && isCorrect}
+                        >
+                            <option value="" disabled>項目を選択...</option>
+                            ${options.map(opt => html`<option key=${opt.key} value=${opt.key}>${opt.label}</option>`)}
+                        </select>
+                        <div class="mt-2 text-xs text-gray-500 dark:text-slate-400 bg-yellow-50 dark:bg-yellow-900/10 p-2 rounded border border-yellow-100 dark:border-yellow-900/20">
+                            <span class="font-bold">💡 ヒント:</span> ${quest.hint}
+                        </div>
+                    </div>
 
                     ${!showResult ? html`
                         <button 
                             onClick=${handleCheck} 
                             disabled=${!selectedVar}
-                            class="w-full py-4 bg-blue-600 text-white rounded-xl font-bold text-xl shadow-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95"
+                            class="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl font-bold text-xl shadow-lg hover:shadow-xl hover:translate-y-[-2px] disabled:opacity-50 disabled:cursor-not-allowed transition-all transform active:scale-95 mt-auto"
                         >
-                            調査実行！ 🔎
+                            これで報告する 📝
                         </button>
                     ` : html`
                         <div class="flex-1 flex flex-col animate-fade-in-up">
-                            <div class="text-center mb-4">
+                            <div class="text-center mb-6">
                                 ${isCorrect ? html`
-                                    <div class="text-6xl mb-2 animate-bounce">⭕</div>
+                                    <div class="text-7xl mb-2 animate-scale-up-bounce">⭕</div>
                                     <div class="text-2xl font-black text-green-500">正解！</div>
                                     ${questIndex === DRILL_QUESTS.length - 1 && html`<${SimpleConfetti} />`}
                                 ` : html`
-                                    <div class="text-6xl mb-2 animate-shake">❌</div>
+                                    <div class="text-7xl mb-2 animate-shake">❌</div>
                                     <div class="text-xl font-bold text-gray-500">惜しい...</div>
                                 `}
                             </div>
                             
-                            <div class="bg-gray-50 dark:bg-slate-700 p-4 rounded-lg mb-4 text-sm">
-                                <div class="flex justify-between border-b border-gray-200 dark:border-slate-600 pb-2 mb-2">
-                                    <span class="text-gray-500 dark:text-slate-400">相関係数 (r)</span>
-                                    <span class="font-mono font-bold text-xl ${r > 0.7 ? 'text-red-500' : r < -0.7 ? 'text-blue-500' : 'text-gray-500'}">${r.toFixed(2)}</span>
+                            <div class="bg-gray-100 dark:bg-slate-700 p-4 rounded-xl mb-4 text-sm border border-gray-200 dark:border-slate-600">
+                                <div class="flex justify-between border-b border-gray-300 dark:border-slate-500 pb-2 mb-2">
+                                    <span class="text-gray-500 dark:text-slate-400 font-bold">相関係数 (r)</span>
+                                    <span class="font-mono font-black text-xl ${r > 0.7 ? 'text-red-500' : r < -0.7 ? 'text-blue-500' : 'text-gray-500'}">${r.toFixed(2)}</span>
                                 </div>
-                                <div class="font-bold text-center text-gray-700 dark:text-slate-200">${MathUtils.getCorrelationStrength(r)}</div>
+                                <div class="font-bold text-center text-gray-700 dark:text-slate-200 text-base">${MathUtils.getCorrelationStrength(r)}</div>
                             </div>
 
                             ${isCorrect && html`
-                                <div class="text-sm text-gray-600 dark:text-slate-300 mb-6 bg-green-50 dark:bg-green-900/20 p-3 rounded border border-green-100 dark:border-green-800">
+                                <div class="text-sm text-gray-700 dark:text-slate-200 mb-6 bg-green-50 dark:bg-green-900/20 p-4 rounded-xl border border-green-200 dark:border-green-800 leading-relaxed font-medium">
                                     ${quest.causationNote}
                                 </div>
-                                <button onClick=${handleNext} class="w-full py-4 bg-green-500 text-white rounded-xl font-bold text-xl shadow-lg hover:bg-green-600 transition-all animate-pulse-fast">
-                                    ${questIndex < DRILL_QUESTS.length - 1 ? '次の指令へ ➡' : 'ミッションコンプリート！ 🏆'}
+                                <button onClick=${handleNext} class="w-full py-4 bg-green-500 text-white rounded-xl font-bold text-xl shadow-lg hover:bg-green-600 transition-all animate-pulse-fast mt-auto">
+                                    ${questIndex < DRILL_QUESTS.length - 1 ? '次の依頼へ ➡' : '全クエスト達成！ 🏆'}
                                 </button>
                             `}
                             ${!isCorrect && html`
-                                <button onClick=${() => setShowResult(false)} class="w-full py-3 bg-gray-500 text-white rounded-xl font-bold hover:bg-gray-600 transition-all">
+                                <button onClick=${() => setShowResult(false)} class="w-full py-3 bg-gray-500 text-white rounded-xl font-bold hover:bg-gray-600 transition-all mt-auto">
                                     やり直す
                                 </button>
                             `}
@@ -576,260 +604,3 @@ const SandboxMode = ({ onExit }) => {
         </div>
     `;
 };
-
-/**
- * Extra Mission Mode (Cleaning / Selection)
- */
-const ExtraMissionMode = ({ stageConfig, onExit }) => {
-    const [localData, setLocalData] = useState([...DATASETS.find(d => d.id === stageConfig.datasetId).data]);
-    const [selectedIds, setSelectedIds] = useState([]);
-    const [cleared, setCleared] = useState(false);
-    
-    // Reset state when stage changes
-    useEffect(() => {
-        setLocalData([...DATASETS.find(d => d.id === stageConfig.datasetId).data]);
-        setSelectedIds([]);
-        setCleared(false);
-    }, [stageConfig]);
-
-    const r = MathUtils.calculateCorrelation(
-        localData.map(d => d[stageConfig.xKey]),
-        localData.map(d => d[stageConfig.yKey])
-    );
-
-    const checkVictory = () => {
-        if (stageConfig.type === 'cleaning') {
-            if (r >= stageConfig.targetR) return true;
-        } else if (stageConfig.type === 'selection') {
-            // Check if selected IDs perfectly match target IDs
-            if (selectedIds.length !== stageConfig.targetIds.length) return false;
-            const sortedSelected = [...selectedIds].sort();
-            const sortedTarget = [...stageConfig.targetIds].sort();
-            return JSON.stringify(sortedSelected) === JSON.stringify(sortedTarget);
-        }
-        return false;
-    };
-
-    const isVictory = checkVictory();
-
-    const handlePointClick = (point) => {
-        if (cleared) return;
-
-        if (stageConfig.type === 'cleaning') {
-            // Remove point
-            setLocalData(prev => prev.filter(p => p.id !== point.id));
-        } else if (stageConfig.type === 'selection') {
-            // Toggle selection
-            if (selectedIds.includes(point.id)) {
-                setSelectedIds(prev => prev.filter(id => id !== point.id));
-            } else {
-                setSelectedIds(prev => [...prev, point.id]);
-            }
-        }
-    };
-
-    return html`
-        <div class="h-full flex flex-col bg-slate-900 text-white">
-            <div class="p-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center shadow-lg z-10">
-                <div>
-                    <div class="text-xs font-bold text-yellow-400 mb-1">EXTRA MISSION</div>
-                    <div class="text-lg font-black">${stageConfig.title}</div>
-                </div>
-                <button onClick=${onExit} class="text-gray-400 hover:text-white text-sm">中断</button>
-            </div>
-            
-            <div class="flex-1 flex flex-col relative overflow-hidden">
-                ${isVictory && html`<${SimpleConfetti} />`}
-                
-                <!-- Overlay Instruction -->
-                <div class="absolute top-4 left-4 right-4 z-20 pointer-events-none">
-                    <div class="bg-black/60 backdrop-blur text-white p-4 rounded-xl border border-white/10 shadow-xl animate-fade-in-up">
-                        <p class="text-sm md:text-base font-bold text-yellow-100">${isVictory ? stageConfig.explanation : stageConfig.intro}</p>
-                    </div>
-                </div>
-
-                <!-- Chart -->
-                <div class="flex-1 p-4 md:p-8">
-                    <${ResponsiveContainer} width="100%" height="100%">
-                        <${ScatterChart} margin=${{ top: 60, right: 20, bottom: 20, left: 20 }}>
-                            <${CartesianGrid} strokeDasharray="3 3" stroke="#475569" />
-                            <${XAxis} type="number" dataKey=${stageConfig.xKey} stroke="#94a3b8" />
-                            <${YAxis} type="number" dataKey=${stageConfig.yKey} stroke="#94a3b8" />
-                            <${Tooltip} cursor=${{ strokeDasharray: '3 3' }} contentStyle=${{ backgroundColor: '#1e293b', borderColor: '#334155', color: 'white' }} />
-                            <${Scatter} data=${localData} onClick=${(e) => handlePointClick(e.payload)}>
-                                ${localData.map((entry) => {
-                                    const isSelected = selectedIds.includes(entry.id);
-                                    return html`
-                                        <${Cell} 
-                                            key=${entry.id} 
-                                            fill=${isSelected ? '#facc15' : '#3b82f6'} 
-                                            stroke=${isSelected ? '#fff' : 'none'}
-                                            strokeWidth=${2}
-                                            cursor="pointer"
-                                        />
-                                    `;
-                                })}
-                            </${Scatter}>
-                        </${ScatterChart}>
-                    </${ResponsiveContainer}>
-                </div>
-
-                <!-- Footer Status -->
-                <div class="h-24 bg-slate-800 border-t border-slate-700 p-4 flex items-center justify-between">
-                    <div>
-                        ${stageConfig.type === 'cleaning' && html`
-                            <div class="text-xs text-slate-400">現在の相関係数</div>
-                            <div class="text-2xl font-mono font-bold ${isVictory ? 'text-green-400' : 'text-white'}">${r.toFixed(3)}</div>
-                        `}
-                        ${stageConfig.type === 'selection' && html`
-                            <div class="text-xs text-slate-400">選択中</div>
-                            <div class="text-xl font-bold text-white">${selectedIds.length} <span class="text-sm font-normal text-slate-500">個</span></div>
-                        `}
-                    </div>
-
-                    ${isVictory ? html`
-                         <button onClick=${onExit} class="bg-yellow-500 hover:bg-yellow-600 text-black font-black py-3 px-8 rounded-full shadow-lg animate-bounce">
-                            MISSION CLEAR!
-                        </button>
-                    ` : html`
-                         <div class="text-xs text-slate-500 font-bold">
-                            ${stageConfig.type === 'cleaning' ? 'クリックして外れ値を除外せよ' : '該当するデータをクリックせよ'}
-                         </div>
-                    `}
-                </div>
-            </div>
-        </div>
-    `;
-};
-
-/**
- * Main App Component
- */
-const App = () => {
-    const [mode, setMode] = useState('menu'); // menu, drill, sandbox, master, extra, lecture
-    const [extraStageIndex, setExtraStageIndex] = useState(0);
-
-    const startExtraMission = (index) => {
-        setExtraStageIndex(index);
-        setMode('extra');
-    };
-
-    // Main Menu
-    if (mode === 'menu') {
-        return html`
-            <div class="h-full overflow-y-auto bg-gray-50 dark:bg-slate-900 p-4 md:p-8">
-                <div class="max-w-4xl mx-auto">
-                    <header class="mb-8 text-center animate-fade-in-up">
-                        <h1 class="text-3xl md:text-5xl font-black text-gray-800 dark:text-white mb-2 tracking-tight">
-                            <span class="text-blue-600">Data</span> Analysis <span class="text-green-500">Challenge</span>
-                        </h1>
-                        <p class="text-gray-500 dark:text-slate-400 font-bold">データ分析の直感を磨くインタラクティブ学習アプリ</p>
-                    </header>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Lecture Mode (Updated Priority) -->
-                        <div 
-                            onClick=${() => setMode('lecture')}
-                            class="group bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6 cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden relative md:col-span-2"
-                        >
-                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-8xl">📝</div>
-                            <div class="relative z-10">
-                                <div class="bg-indigo-100 text-indigo-700 inline-block px-3 py-1 rounded-full text-xs font-black mb-3 border border-indigo-200">授業プリント完全対応</div>
-                                <h2 class="text-2xl font-black text-gray-800 dark:text-white mb-2">デジタルワークシート (解説)</h2>
-                                <p class="text-sm text-gray-500 dark:text-slate-400 mb-4 font-medium leading-relaxed">
-                                    授業で配られたプリントの内容を、動くグラフで体験しながら学べます。<br/>
-                                    相関係数の変化シミュレーターや、疑似相関の図解で深く理解しよう！
-                                </p>
-                                <span class="text-white bg-indigo-600 px-4 py-2 rounded-lg font-bold text-sm inline-flex items-center group-hover:bg-indigo-700 transition-all shadow-md">
-                                    ワークシートを開く <span class="ml-2">→</span>
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Drill Mode -->
-                        <div 
-                            onClick=${() => setMode('drill')}
-                            class="group bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6 cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden relative"
-                        >
-                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-8xl">📊</div>
-                            <div class="relative z-10">
-                                <div class="bg-blue-100 text-blue-700 inline-block px-3 py-1 rounded-full text-xs font-black mb-3">STORY MODE</div>
-                                <h2 class="text-2xl font-black text-gray-800 dark:text-white mb-2">データ探偵ドリル</h2>
-                                <p class="text-sm text-gray-500 dark:text-slate-400 mb-4">
-                                    校長先生やコンビニ店長からの依頼をデータ分析で解決しよう！
-                                </p>
-                                <span class="text-blue-600 font-bold text-sm flex items-center group-hover:gap-2 transition-all">START <span class="ml-1">→</span></span>
-                            </div>
-                        </div>
-
-                        <!-- Sandbox Mode -->
-                        <div 
-                            onClick=${() => setMode('sandbox')}
-                            class="group bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6 cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1 overflow-hidden relative"
-                        >
-                            <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-8xl">🧪</div>
-                            <div class="relative z-10">
-                                <div class="bg-green-100 text-green-700 inline-block px-3 py-1 rounded-full text-xs font-black mb-3">FREE MODE</div>
-                                <h2 class="text-2xl font-black text-gray-800 dark:text-white mb-2">自由研究ラボ</h2>
-                                <p class="text-sm text-gray-500 dark:text-slate-400 mb-4">
-                                    様々なデータセットを自由に組み合わせて相関を探そう。
-                                </p>
-                                <span class="text-green-600 font-bold text-sm flex items-center group-hover:gap-2 transition-all">ENTER <span class="ml-1">→</span></span>
-                            </div>
-                        </div>
-
-                        <!-- Master Mode -->
-                        <div 
-                            onClick=${() => setMode('master')}
-                            class="group bg-gradient-to-br from-indigo-600 to-purple-700 text-white rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-xl transition-all hover:-translate-y-1 md:col-span-2 relative overflow-hidden"
-                        >
-                            <div class="absolute -right-10 -bottom-10 text-9xl opacity-20 rotate-12">👑</div>
-                            <div class="relative z-10 flex flex-col md:flex-row items-center gap-6">
-                                <div class="flex-1">
-                                    <div class="bg-white/20 inline-block px-3 py-1 rounded-full text-xs font-black mb-3 border border-white/20">HARD MODE</div>
-                                    <h2 class="text-3xl font-black mb-2">相関マスター</h2>
-                                    <p class="text-blue-100 mb-4 text-sm font-bold opacity-90">
-                                        あなたの「統計的直感」を試す最終試験。
-                                        グラフだけを見て、相関係数(r)を瞬時に言い当てろ！
-                                    </p>
-                                </div>
-                                <div class="bg-white/10 p-3 rounded-full hover:bg-white/20 transition-colors">
-                                    <span class="text-2xl block animate-pulse">⚔️</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Extra Missions List -->
-                    <div class="mt-8">
-                        <h3 class="text-sm font-bold text-gray-400 uppercase mb-4 tracking-wider">Extra Missions (応用編)</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            ${EXTRA_MISSION_STAGES.map((stage, i) => html`
-                                <div 
-                                    key=${i}
-                                    onClick=${() => startExtraMission(i)}
-                                    class="bg-slate-800 text-slate-300 rounded-xl p-4 border border-slate-700 hover:border-yellow-500 cursor-pointer transition-all hover:bg-slate-750 group"
-                                >
-                                    <div class="text-xs text-yellow-500 font-bold mb-1">MISSION ${i + 1}</div>
-                                    <div class="font-bold text-white group-hover:text-yellow-400 transition-colors">${stage.title}</div>
-                                </div>
-                            `)}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    if (mode === 'drill') return html`<${DrillMode} onExit=${() => setMode('menu')} />`;
-    if (mode === 'sandbox') return html`<${SandboxMode} onExit=${() => setMode('menu')} />`;
-    if (mode === 'master') return html`<${MasterMode} onExit=${() => setMode('menu')} />`;
-    if (mode === 'extra') return html`<${ExtraMissionMode} stageConfig=${EXTRA_MISSION_STAGES[extraStageIndex]} onExit=${() => setMode('menu')} />`;
-    if (mode === 'lecture') return html`<${LectureMode} onExit=${() => setMode('menu')} />`;
-
-    return null;
-};
-
-// Mount the app
-const root = createRoot(document.getElementById('root'));
-root.render(html`<${App} />`);
