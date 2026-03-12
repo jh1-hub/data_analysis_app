@@ -1,0 +1,5 @@
+{
+  "name": "Flash使用 of データ分析学習アプリ (JS版)",
+  "description": "散布図、相関係数、回帰分析、因果関係などを学ぶためのインタラクティブな学習アプリ。予備学習と特訓ドリルの2部構成。",
+  "requestFramePermissions": []
+}
