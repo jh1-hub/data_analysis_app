@@ -4,6 +4,8 @@ import { motion } from 'motion/react';
 import { CARDS } from '../data/cards';
 
 export default function HomePhase({ onNavigate, unlockedCards, highScore }) {
+  const isComplete = unlockedCards.length === CARDS.length && CARDS.length > 0;
+
   const menuItems = [
     { id: 'learning', title: '1. 予備学習', desc: 'データ分析の基礎知識を学ぼう', icon: BookOpen, color: 'bg-blue-500' },
     { id: 'game', title: '2. 特訓ドリル', desc: '依頼に答えて相関関係を見つけよう', icon: Gamepad2, color: 'bg-indigo-500' },
@@ -27,14 +29,49 @@ export default function HomePhase({ onNavigate, unlockedCards, highScore }) {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12">
+    <div className={`max-w-5xl mx-auto space-y-12 transition-all duration-1000 p-8 rounded-[3rem] ${
+      isComplete ? 'bg-gradient-to-br from-amber-100 via-rose-100 to-indigo-100 shadow-[0_0_50px_rgba(251,191,36,0.2)]' : ''
+    }`}>
+      {/* Complete Banner */}
+      {isComplete && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9, y: -20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 p-1 rounded-3xl shadow-xl"
+        >
+          <div className="bg-white/90 backdrop-blur-sm px-8 py-6 rounded-[1.4rem] text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+              <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-[conic-gradient(from_0deg,transparent,rgba(251,191,36,0.5),transparent)] animate-[spin_10s_linear_infinite]" />
+            </div>
+            <div className="relative z-10">
+              <div className="flex justify-center gap-2 mb-2">
+                <Trophy className="w-8 h-8 text-amber-500 animate-bounce" />
+                <Award className="w-8 h-8 text-rose-500 animate-bounce delay-75" />
+                <Trophy className="w-8 h-8 text-amber-500 animate-bounce delay-150" />
+              </div>
+              <h2 className="text-3xl font-black text-slate-800 mb-2 tracking-tighter">
+                CONGRATULATIONS!
+              </h2>
+              <p className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-rose-600">
+                カードコレクション コンプリート達成！！
+              </p>
+              <p className="text-sm text-slate-500 font-bold mt-2">
+                あなたは真のデータマスターです。この知識を武器に、世界を分析しましょう！
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Hero Section */}
       <div className="text-center space-y-4">
         <h2 className="text-4xl md:text-5xl font-black text-slate-800 tracking-tight">
-          データ分析の世界へようこそ！
+          {isComplete ? '究極のデータ分析マスター' : 'データ分析の世界へようこそ！'}
         </h2>
         <p className="text-lg text-slate-600 font-bold max-w-2xl mx-auto">
-          基礎から実践まで、ゲーム感覚でデータサイエンスの考え方を身につけよう。
+          {isComplete 
+            ? '全ての知識を手に入れたあなたに、もう迷いはありません。' 
+            : '基礎から実践まで、ゲーム感覚でデータサイエンスの考え方を身につけよう。'}
         </p>
       </div>
 

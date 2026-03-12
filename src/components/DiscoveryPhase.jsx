@@ -217,8 +217,8 @@ export default function DiscoveryPhase({ onBack, onNext, onUnlockCard }) {
           if (isCurrentDatasetComplete) {
             let cardIdToUnlock = null;
             if (datasetId === 'game') cardIdToUnlock = 3;
-            else if (datasetId === 'ec') cardIdToUnlock = 11;
-            else if (datasetId === 'school') cardIdToUnlock = 12;
+            else if (datasetId === 'ec') cardIdToUnlock = 4;
+            else if (datasetId === 'school') cardIdToUnlock = 5;
 
             if (cardIdToUnlock) {
               const spCard = CARDS.find(c => c.id === cardIdToUnlock);

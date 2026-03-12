@@ -211,10 +211,14 @@ export const Step3Explanation = () => {
 };
 
 export const Step4Explanation = () => {
+  // Generate more realistic regression data
   const regressionData = [
-    { x: 1, y: 30 }, { x: 2, y: 40 }, { x: 3, y: 50 }, { x: 4, y: 60 }, { x: 5, y: 70 },
-    { x: 1.5, y: 35 }, { x: 2.5, y: 45 }, { x: 3.5, y: 55 }, { x: 4.5, y: 65 }, { x: 5.5, y: 75 }
+    { x: 1, y: 28 }, { x: 1.2, y: 35 }, { x: 1.8, y: 32 }, { x: 2, y: 45 }, 
+    { x: 2.3, y: 38 }, { x: 2.8, y: 52 }, { x: 3, y: 48 }, { x: 3.2, y: 58 }, 
+    { x: 3.7, y: 54 }, { x: 4, y: 65 }, { x: 4.2, y: 62 }, { x: 4.8, y: 72 }, 
+    { x: 5, y: 68 }, { x: 5.3, y: 78 }, { x: 5.8, y: 74 }, { x: 6.2, y: 85 }
   ];
+  // Line of best fit: y = 10x + 20 (approx)
   const lineData = [{ x: 0, y: 20 }, { x: 7, y: 90 }];
   const predictionPoint = [{ x: 6, y: 80 }];
 
@@ -223,24 +227,26 @@ export const Step4Explanation = () => {
       <div className="bg-indigo-50 border-l-4 border-indigo-500 p-6 rounded-r-xl shadow-sm">
         <h3 className="text-xl font-black text-indigo-900 mb-3 flex items-center gap-2">
           <span className="bg-indigo-500 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm">4</span>
-          回帰直線（かいきちょくせん）と予測
+          回帰分析（かいきぶんせき）と予測
         </h3>
         <p className="text-slate-700 leading-relaxed text-lg">
-          データに相関があるとき、その中心を通るような直線を引くことができます。これを<strong className="text-indigo-600 font-black text-xl bg-indigo-100 px-2 py-1 rounded mx-1">回帰直線</strong>といいます。<br/>
-          この線を使うと、「データがない部分（未来の数値など）」を予測することができます。これを<strong className="text-indigo-600 font-black">回帰分析</strong>と呼びます。
+          データの間にある関係を数式で表し、未知のデータを予測する手法を<strong className="text-indigo-600 font-black text-xl bg-indigo-100 px-2 py-1 rounded mx-1">回帰分析</strong>といいます。
+          特に、1つのデータからもう1つのデータを予測することを<strong className="text-indigo-600 font-black">単回帰分析</strong>と呼びます。<br/>
+          このとき、データの中心を通るように引かれた直線を<strong className="text-indigo-600 font-black">回帰直線</strong>、あるいは単に<strong className="text-indigo-600 font-black">回帰</strong>と呼び、これを使って未来を予測します。
         </p>
       </div>
       
       <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 flex flex-col md:flex-row gap-6 items-center">
         <div className="w-full md:w-1/2 h-80 bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-          <ResponsiveContainer width="100%" height="100%">
+          <h4 className="text-xs font-black text-slate-400 mb-2 text-center uppercase tracking-widest">散布図から直線を導き出す</h4>
+          <ResponsiveContainer width="100%" height="90%">
             <ComposedChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis type="number" dataKey="x" domain={[0, 7]} name="勉強時間" unit="h" />
               <YAxis type="number" domain={[0, 100]} name="点数" unit="点" />
-              <Scatter data={regressionData} fill="#94a3b8" name="実際のデータ" />
+              <Scatter data={regressionData} dataKey="y" fill="#94a3b8" name="実際のデータ" />
               <Line data={lineData} type="linear" dataKey="y" stroke="#f97316" strokeWidth={3} dot={false} name="回帰直線" />
-              <Scatter data={predictionPoint} fill="#10b981" r={8} name="予測値" />
+              <Scatter data={predictionPoint} dataKey="y" fill="#10b981" r={8} name="予測値" />
               <ReferenceLine x={6} stroke="#10b981" strokeDasharray="3 3" />
               <ReferenceLine y={80} stroke="#10b981" strokeDasharray="3 3" />
             </ComposedChart>
@@ -250,11 +256,11 @@ export const Step4Explanation = () => {
         <div className="w-full md:w-1/2 space-y-4">
           <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
             <h4 className="font-bold text-orange-500 mb-2">回帰直線の役割</h4>
-            <p className="text-sm text-slate-600">バラバラの点の中央を通る直線を引くことで、全体の傾向を数式（Y = aX + b）で表します。</p>
+            <p className="text-sm text-slate-600">バラバラの点（散布図）の「もっともらしい中心」を通る直線を引くことで、全体の傾向を数式（Y = aX + b）で表します。</p>
           </div>
           <div className="bg-white p-4 rounded-lg border border-emerald-200 shadow-sm">
             <h4 className="font-bold text-emerald-600 mb-2">予測ができる！</h4>
-            <p className="text-sm text-slate-600">例えば「6時間勉強したら何点取れそうか？」という予測が、緑の点（80点）のように線の上から読み取れます。</p>
+            <p className="text-sm text-slate-600">回帰直線が引ければ、「まだデータがない部分」も予測可能です。例えば「6時間勉強したら何点取れそうか？」が緑の点のように導き出せます。</p>
           </div>
         </div>
       </div>

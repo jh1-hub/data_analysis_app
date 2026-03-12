@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Gift, Search, Database, Scale, Grip, Link as LinkIcon, AlignCenter, BarChart2, AlertCircle, MoveHorizontal, ArrowRight, Unlink, TrendingUp, Home, Users, Activity, BarChart, Layout, Percent } from 'lucide-react';
+import { Gift, Search, Database, Scale, Grip, Link as LinkIcon, AlignCenter, BarChart2, AlertCircle, MoveHorizontal, ArrowRight, Unlink, TrendingUp, Home, Users, Activity, BarChart, Layout, Percent, CheckCircle } from 'lucide-react';
 
 const IconMap = {
-  Scale, Grip, Link: LinkIcon, AlignCenter, BarChart2, AlertCircle, MoveHorizontal, ArrowRight, Unlink, TrendingUp, Users, Activity, BarChart, Layout, Percent
+  Scale, Grip, Link: LinkIcon, AlignCenter, BarChart2, AlertCircle, MoveHorizontal, ArrowRight, Unlink, TrendingUp, Users, Activity, BarChart, Layout, Percent, CheckCircle
 };
 
 export default function GachaOverlay({ card, onClose }) {
