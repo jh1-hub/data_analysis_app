@@ -223,8 +223,12 @@ export default function DiscoveryPhase({ onBack, onNext, onUnlockCard }) {
             if (cardIdToUnlock) {
               const spCard = CARDS.find(c => c.id === cardIdToUnlock);
               setGachaCard(spCard);
-              setShowGacha(true);
-              if (onUnlockCard) onUnlockCard(cardIdToUnlock);
+              
+              // Delay gacha appearance by 1.5 seconds to show the completion message
+              setTimeout(() => {
+                setShowGacha(true);
+                if (onUnlockCard) onUnlockCard(cardIdToUnlock);
+              }, 1500);
             }
           }
           
@@ -257,8 +261,21 @@ export default function DiscoveryPhase({ onBack, onNext, onUnlockCard }) {
                         discoveredIds.ec.length === DATASETS.ec.insights.length && 
                         discoveredIds.school.length === DATASETS.school.insights.length;
 
+  const handleGachaClose = () => {
+    setShowGacha(false);
+    
+    // Auto-transition to the next dataset or endless phase
+    if (datasetId === 'game') {
+      handleDatasetChange('ec');
+    } else if (datasetId === 'ec') {
+      handleDatasetChange('school');
+    } else if (datasetId === 'school' && isAllComplete && onNext) {
+      onNext();
+    }
+  };
+
   if (showGacha && gachaCard) {
-    return <GachaOverlay card={gachaCard} onClose={() => setShowGacha(false)} />;
+    return <GachaOverlay card={gachaCard} onClose={handleGachaClose} />;
   }
 
   return (
@@ -307,7 +324,7 @@ export default function DiscoveryPhase({ onBack, onNext, onUnlockCard }) {
           <Trophy className="w-20 h-20 mx-auto text-emerald-500 drop-shadow-md" />
           <h3 className="text-2xl font-black text-emerald-800">このデータセットの法則をすべて発見しました！</h3>
           <p className="text-emerald-700 font-bold mb-4">
-            見事な分析力です。他のデータセットにも挑戦してみましょう！
+            {isAllComplete ? '見事な分析力です。すべての法則を発見しました！' : '見事な分析力です。他のデータセットにも挑戦してみましょう！'}
           </p>
           {isAllComplete && onNext && (
             <button
